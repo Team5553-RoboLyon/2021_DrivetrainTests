@@ -55,8 +55,8 @@ private:
   rev::CANEncoder m_encodeurGauche1{m_moteurGauche};
   rev::CANEncoder m_encodeurGauche2{m_moteurGaucheFollower};
 
-  frc::Encoder m_encodeurExterneDroite{0, 1, true, frc::Encoder::k2X};
-  frc::Encoder m_encodeurExterneGauche{2, 3, false, frc::Encoder::k2X};
+  frc::Encoder m_encodeurExterneDroite{0, 1, true, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneGauche{2, 3, false, frc::Encoder::k4X};
 
   frc::ADXRS450_Gyro m_gyro{frc::SPI::Port::kOnboardCS0};
 
@@ -82,6 +82,8 @@ private:
 
   frc::XboxController m_driverController{0};
 
+  char m_invertedPrefix[8];
+
   bool modeClimberJF = false;
   bool doigtLeve;
   bool shooterOn = false;
@@ -90,9 +92,14 @@ private:
   double m_ramp = 0;
   double m_time0;
 
+  int m_logState = 0;
+  char m_prefix[512];
+
   /*m_IsEnabledEntry = frc::Shuffleboard::GetTab("Shooter").Add("Is Shooter enabled", false).WithWidget(frc::BuiltInWidgets::kBooleanBox).GetEntry();
     m_PowerEntry = frc::Shuffleboard::GetTab("Shooter").Add("Power", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).GetEntry();
     m_LogEntry = frc::Shuffleboard::GetTab("Shooter").Add("Logging", false).WithWidget(frc::BuiltInWidgets::kToggleButton).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("Shooter").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
   */
+
+  void LogData();
 };

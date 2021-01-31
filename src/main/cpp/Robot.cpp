@@ -45,7 +45,7 @@
 
 #define FLAG_TestSpecs_Done 1
 
-#define TIME_RAMP 0
+#define TIME_RAMP 0.6
 
 typedef struct TestSpecs TestSpecs;
 struct TestSpecs
@@ -130,7 +130,7 @@ double Deadband(double value, double deadband = 0.1)
         return value < 0 ? (value + deadband) / (1.0 - deadband) : (value - deadband) / (1.0 - deadband);
 }
 
-void Robot::DriveOld(double forward, double turn)
+void Robot::Drive(double forward, double turn)
 {
     if (!m_override)
     {
@@ -186,7 +186,7 @@ void Robot::DriveOld(double forward, double turn)
     }
 }
 
-void Robot::Drive(double jy, double jx)
+void Robot::DriveOld(double jy, double jx)
 {
     jy = Deadband(jy, 0.1);
     jx = Deadband(jx, 0.2);
@@ -209,11 +209,11 @@ void Robot::RobotInit()
     m_moteurGaucheShooter.RestoreFactoryDefaults();
     m_moteurDroiteShooter.RestoreFactoryDefaults();*/
 
-    /*m_moteurDroite.SetOpenLoopRampRate(TIME_RAMP);
+    m_moteurDroite.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurGauche.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurDroiteFollower.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurGaucheFollower.SetOpenLoopRampRate(TIME_RAMP);
-    */
+
     /*m_moteurDroite.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
     m_moteurGauche.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
     m_moteurDroiteFollower.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
@@ -246,11 +246,16 @@ void Robot::RobotInit()
     //m_moteurDroiteFollower.Follow(m_moteurDroite);
     //m_moteurGaucheFollower.Follow(m_moteurGauche);
 
+    m_encodeurExterneDroite.SetDistancePerPulse(1);
+    m_encodeurExterneGauche.SetDistancePerPulse(1);
+
     m_moteurDroite.SetInverted(false);
     m_moteurDroiteFollower.SetInverted(false);
 
     m_moteurGauche.SetInverted(true);
     m_moteurGaucheFollower.SetInverted(true);
+
+    sprintf(m_invertedPrefix, "L%d%dR%d%d", (int)m_moteurGauche.GetInverted(), (int)m_moteurGaucheFollower.GetInverted(), (int)m_moteurDroite.GetInverted(), (int)m_moteurDroiteFollower.GetInverted());
 
     m_moteurGaucheShooter.SetInverted(true);
 
@@ -295,6 +300,64 @@ void Robot::RobotInit()
     m_va_left.m_acceleration = 0;
     m_va_right.m_speed = 0;
     m_va_right.m_acceleration = 0;
+    Robot::AddPeriodic([&]() {
+        switch (m_logState)
+        {
+        case 1:
+            m_LogFile = new CSVLogFile(m_prefix, "Right", "Left", "neoD1", "neoD2", "neoG1", "neoG2", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFilename.SetString(m_LogFile->GetFileName());
+            m_encodeurExterneDroite.Reset();
+            m_encodeurExterneGauche.Reset();
+            m_logState = 2;
+            break;
+
+        case 2:
+            if (std::time(0) - m_time0 < TIME_RAMP)
+            {
+                m_ramp = 1;
+            }
+            else
+            {
+                m_ramp = 0;
+            }
+            double md0, md1, mg0, mg1;
+            md0 = m_moteurDroite.GetBusVoltage() * m_moteurDroite.GetAppliedOutput();
+            md1 = m_moteurDroiteFollower.GetBusVoltage() * m_moteurDroiteFollower.GetAppliedOutput();
+            mg0 = m_moteurGauche.GetBusVoltage() * m_moteurGauche.GetAppliedOutput();
+            mg1 = m_moteurGaucheFollower.GetBusVoltage() * m_moteurGaucheFollower.GetAppliedOutput();
+            m_LogFile->Log(m_encodeurExterneDroite.GetDistance(),
+                           m_encodeurExterneGauche.GetDistance(),
+                           m_encodeurDroite1.GetPosition(),
+                           m_encodeurDroite2.GetPosition(),
+                           m_encodeurGauche1.GetPosition(),
+                           m_encodeurGauche2.GetPosition(),
+                           m_gyro.GetAngle(),
+                           TestData[CurrentTestID].m_voltage,
+                           m_moteurDroite.GetBusVoltage(),
+                           m_moteurDroiteFollower.GetBusVoltage(),
+                           m_moteurGauche.GetBusVoltage(),
+                           m_moteurGaucheFollower.GetBusVoltage(),
+                           m_moteurDroite.GetAppliedOutput(),
+                           m_moteurDroiteFollower.GetAppliedOutput(),
+                           m_moteurGauche.GetAppliedOutput(),
+                           m_moteurGaucheFollower.GetAppliedOutput(),
+                           m_moteurDroite.GetOutputCurrent(),
+                           m_moteurDroiteFollower.GetOutputCurrent(),
+                           m_moteurGauche.GetOutputCurrent(),
+                           m_moteurGaucheFollower.GetOutputCurrent(),
+                           m_ramp);
+            break;
+
+        case 3:
+            delete m_LogFile;
+            m_logState = 0;
+            break;
+
+        default:
+            break;
+        }
+    },
+                       1_ms, 4_ms);
 }
 
 void Robot::AutonomousInit() {}
@@ -361,20 +424,15 @@ void Robot::TeleopPeriodic()
                 FLAG_ON(TestData[CurrentTestID].m_flags, FLAG_TestSpecs_Done);
                 messageTestEnCours();
 
-                char prefix[256];
                 if (TestData[CurrentTestID].m_voltage < 0)
                 {
-                    sprintf(prefix, "/home/lvuser/logs/-test_%d_%.2fvolts_", CurrentTestID, TestData[CurrentTestID].m_voltage);
+                    sprintf(m_prefix, "/home/lvuser/logs/-test_%s_%d_%.2fvolts_", m_invertedPrefix, CurrentTestID, TestData[CurrentTestID].m_voltage);
                 }
                 else
                 {
-                    sprintf(prefix, "/home/lvuser/logs/+test_%d_%.2fvolts_", CurrentTestID, TestData[CurrentTestID].m_voltage);
+                    sprintf(m_prefix, "/home/lvuser/logs/+test_%s_%d_%.2fvolts_", m_invertedPrefix, CurrentTestID, TestData[CurrentTestID].m_voltage);
                 }
-
-                m_LogFile = new CSVLogFile(prefix, "Right", "Left", "neoD1", "neoD2", "neoG1", "neoG2", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
-                m_LogFilename.SetString(m_LogFile->GetFileName());
-                m_encodeurExterneDroite.Reset();
-                m_encodeurExterneGauche.Reset();
+                m_logState = 1; // Préviens de démarrer le log (écriture du fichier)
             }
         }
         else
@@ -382,35 +440,15 @@ void Robot::TeleopPeriodic()
             CurrentTestID += 1;
             if (CurrentTestID < TEST_TOTAL_NB * 2)
             {
-                delete m_LogFile;
+                m_logState = 3;
                 messageTestEnAttente();
             }
             else
             {
+                m_logState = 3;
                 messageTestTousEffectues();
             }
         }
-    }
-
-    if (m_override)
-    {
-        if (std::time(0) - m_time0 < TIME_RAMP)
-        {
-            m_ramp = 1;
-        }
-        else
-        {
-            m_ramp = 0;
-        }
-        double md0, md1, mg0, mg1;
-        md0 = m_moteurDroite.GetBusVoltage() * m_moteurDroite.GetAppliedOutput();
-        md1 = m_moteurDroiteFollower.GetBusVoltage() * m_moteurDroiteFollower.GetAppliedOutput();
-        mg0 = m_moteurGauche.GetBusVoltage() * m_moteurGauche.GetAppliedOutput();
-        mg1 = m_moteurGaucheFollower.GetBusVoltage() * m_moteurGaucheFollower.GetAppliedOutput();
-
-        m_LogFile->Log(m_encodeurExterneDroite.GetDistance(), m_encodeurExterneGauche.GetDistance(), m_encodeurDroite1.GetPosition(), m_encodeurDroite2.GetPosition(), m_encodeurGauche1.GetPosition(), m_encodeurGauche2.GetPosition(), m_gyro.GetAngle(), TestData[CurrentTestID].m_voltage, m_moteurDroite.GetBusVoltage(), m_moteurDroiteFollower.GetBusVoltage(), m_moteurGauche.GetBusVoltage(), m_moteurGaucheFollower.GetBusVoltage(), m_moteurDroite.GetAppliedOutput(), m_moteurDroiteFollower.GetAppliedOutput(), m_moteurGauche.GetAppliedOutput(), m_moteurGaucheFollower.GetAppliedOutput(), m_moteurDroite.GetOutputCurrent(), m_moteurDroiteFollower.GetOutputCurrent(), m_moteurGauche.GetOutputCurrent(), m_moteurGaucheFollower.GetOutputCurrent(), m_ramp);
-        //std::cout << mg0 << " " << mg1 << " " << md0 << " " << md1 << std::endl;
-        //std::cout << m_encodeurExterneDroite.GetDistance() << std::endl;
     }
 
     if (m_driverController.GetYButtonPressed())
