@@ -17,8 +17,8 @@
 #include <networktables/NetworkTableEntry.h>
 #include "lib/CSVLogFile.h"
 #include "lib/CustomMaths.h"
-#include <frc/ADXRS450_Gyro.h>
 #include "Joystick.h"
+#include <adi/ADIS16470_IMU.h>
 
 class Robot : public frc::TimedRobot
 {
@@ -44,7 +44,7 @@ private:
   KineticToVoltage m_kv;
 
   CSVLogFile *m_LogFile, *m_LogFileDriving;
-  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving;
+  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX;
   rev::CANSparkMax m_moteurDroite{1, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
@@ -58,7 +58,7 @@ private:
   frc::Encoder m_encodeurExterneDroite{0, 1, true, frc::Encoder::k4X};
   frc::Encoder m_encodeurExterneGauche{2, 3, false, frc::Encoder::k4X};
 
-  frc::ADXRS450_Gyro m_gyro{frc::SPI::Port::kOnboardCS0};
+  frc::ADIS16470_IMU m_imu{};
 
   frc::PWMSparkMax m_moteurTreuil{5};
 

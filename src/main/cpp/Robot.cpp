@@ -235,11 +235,14 @@ void Robot::RobotInit()
     m_moteurDroiteFollower.SetClosedLoopRampRate(0.5);
     */
 
-    m_gyro.Calibrate();
+    m_imu.Reset();
+    m_imu.Calibrate();
 
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-    frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
+    m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    //frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
 
@@ -331,7 +334,7 @@ void Robot::RobotInit()
                            m_encodeurDroite2.GetPosition(),
                            m_encodeurGauche1.GetPosition(),
                            m_encodeurGauche2.GetPosition(),
-                           m_gyro.GetAngle(),
+                           m_imu.GetAngle(),
                            TestData[CurrentTestID].m_voltage,
                            m_moteurDroite.GetBusVoltage(),
                            m_moteurDroiteFollower.GetBusVoltage(),
@@ -372,7 +375,10 @@ void Robot::TeleopInit()
 
 void Robot::TeleopPeriodic()
 {
+    //std::cout << m_imu.GetAngle() << std::endl;
     //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+    m_speedY.SetDouble(m_imu.GetAccelInstantY());
+    m_speedX.SetDouble(m_imu.GetAccelInstantX());
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 
     /*if (m_driverController.GetAButton())
@@ -473,7 +479,7 @@ void Robot::TeleopPeriodic()
 
     if (m_isLogging)
     {
-        m_LogFileDriving->Log(m_encodeurExterneDroite.GetDistance(), m_encodeurExterneGauche.GetDistance(), m_encodeurDroite1.GetPosition(), m_encodeurDroite2.GetPosition(), m_encodeurGauche1.GetPosition(), m_encodeurGauche2.GetPosition(), m_gyro.GetAngle(), TestData[CurrentTestID].m_voltage, m_moteurDroite.GetBusVoltage(), m_moteurDroiteFollower.GetBusVoltage(), m_moteurGauche.GetBusVoltage(), m_moteurGaucheFollower.GetBusVoltage(), m_moteurDroite.GetAppliedOutput(), m_moteurDroiteFollower.GetAppliedOutput(), m_moteurGauche.GetAppliedOutput(), m_moteurGaucheFollower.GetAppliedOutput(), m_moteurDroite.GetOutputCurrent(), m_moteurDroiteFollower.GetOutputCurrent(), m_moteurGauche.GetOutputCurrent(), m_moteurGaucheFollower.GetOutputCurrent(), m_ramp);
+        m_LogFileDriving->Log(m_encodeurExterneDroite.GetDistance(), m_encodeurExterneGauche.GetDistance(), m_encodeurDroite1.GetPosition(), m_encodeurDroite2.GetPosition(), m_encodeurGauche1.GetPosition(), m_encodeurGauche2.GetPosition(), m_imu.GetAngle(), TestData[CurrentTestID].m_voltage, m_moteurDroite.GetBusVoltage(), m_moteurDroiteFollower.GetBusVoltage(), m_moteurGauche.GetBusVoltage(), m_moteurGaucheFollower.GetBusVoltage(), m_moteurDroite.GetAppliedOutput(), m_moteurDroiteFollower.GetAppliedOutput(), m_moteurGauche.GetAppliedOutput(), m_moteurGaucheFollower.GetAppliedOutput(), m_moteurDroite.GetOutputCurrent(), m_moteurDroiteFollower.GetOutputCurrent(), m_moteurGauche.GetOutputCurrent(), m_moteurGaucheFollower.GetOutputCurrent(), m_ramp);
         //std::cout << mg0 << " " << mg1 << " " << md0 << " " << md1 << std::endl;
         //std::cout << m_encodeurExterneDroite.GetDistance() << std::endl;
     }
