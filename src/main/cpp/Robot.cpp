@@ -130,7 +130,7 @@ double Deadband(double value, double deadband = 0.1)
         return value < 0 ? (value + deadband) / (1.0 - deadband) : (value - deadband) / (1.0 - deadband);
 }
 
-void Robot::Drive(double forward, double turn)
+void Robot::DriveOld(double forward, double turn)
 {
     if (!m_override)
     {
@@ -186,7 +186,7 @@ void Robot::Drive(double forward, double turn)
     }
 }
 
-void Robot::DriveOld(double jy, double jx)
+void Robot::Drive(double jy, double jx)
 {
     jy = Deadband(jy, 0.1);
     jx = Deadband(jx, 0.2);
@@ -235,9 +235,6 @@ void Robot::RobotInit()
     m_moteurDroiteFollower.SetClosedLoopRampRate(0.5);
     */
 
-    m_imu.Reset();
-    m_imu.Calibrate();
-
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
@@ -251,6 +248,8 @@ void Robot::RobotInit()
 
     m_encodeurExterneDroite.SetDistancePerPulse(1);
     m_encodeurExterneGauche.SetDistancePerPulse(1);
+    m_encodeurExterneDroite.SetSamplesToAverage(65);
+    m_encodeurExterneGauche.SetSamplesToAverage(65);
 
     m_moteurDroite.SetInverted(false);
     m_moteurDroiteFollower.SetInverted(false);
@@ -280,21 +279,21 @@ void Robot::RobotInit()
     //m_solenoidDoigt.Set(frc::DoubleSolenoid::Value::kForward);
 
     //Left 1 Forward
-    m_kv.SetMotorCoefficients(0, 0, 2.80842, 0.16071, 0.1467);
+    m_kv.SetMotorCoefficients(0, 0, 2.8149691270078727, 0.45110716800617084, 0.11862997169896072);
     //Left 2 Forward
-    m_kv.SetMotorCoefficients(1, 0, 2.80833, 0.1549, 0.14571);
+    m_kv.SetMotorCoefficients(1, 0, 2.816131678616728, 0.44998083818275764, 0.11749757285780937);
     //Right 1 Forward
-    m_kv.SetMotorCoefficients(2, 0, 2.80423, 0.13559, 0.16904);
+    m_kv.SetMotorCoefficients(2, 0, 2.811025373489477, 0.42131875871913615, 0.13963854971517176);
     //Right 2 Forward
-    m_kv.SetMotorCoefficients(3, 0, 2.80524, 0.13376, 0.16744);
+    m_kv.SetMotorCoefficients(3, 0, 2.812384199475958, 0.4233131860594181, 0.13835166836146584);
     //Left 1 Backward
-    m_kv.SetMotorCoefficients(0, 1, 2.80397, 0.14271, -0.15557);
+    m_kv.SetMotorCoefficients(0, 1, 2.8462088688557325, 0.3633894701736762, -0.09102164579231165);
     //Left 2 Backward
-    m_kv.SetMotorCoefficients(1, 1, 2.80367, 0.13479, -0.15524);
+    m_kv.SetMotorCoefficients(1, 1, 2.846837565553953, 0.35792376754497357, -0.09047571972479762);
     //Right 1 Backward
-    m_kv.SetMotorCoefficients(2, 1, 2.83487, 0.12593, -0.14335);
+    m_kv.SetMotorCoefficients(2, 1, 2.801029265584793, 0.3784532241367712, -0.155533835192184);
     //Right 2 Backward
-    m_kv.SetMotorCoefficients(3, 1, 2.83517, 0.12205, -0.14276);
+    m_kv.SetMotorCoefficients(3, 1, 2.8023545366303493, 0.3915668240840841, -0.15437240108228778);
 
     m_va_max.m_speed = 3;
     m_va_max.m_acceleration = 5;
@@ -307,7 +306,7 @@ void Robot::RobotInit()
         switch (m_logState)
         {
         case 1:
-            m_LogFile = new CSVLogFile(m_prefix, "Right", "Left", "neoD1", "neoD2", "neoG1", "neoG2", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFile = new CSVLogFile(m_prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilename.SetString(m_LogFile->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -328,12 +327,10 @@ void Robot::RobotInit()
             md1 = m_moteurDroiteFollower.GetBusVoltage() * m_moteurDroiteFollower.GetAppliedOutput();
             mg0 = m_moteurGauche.GetBusVoltage() * m_moteurGauche.GetAppliedOutput();
             mg1 = m_moteurGaucheFollower.GetBusVoltage() * m_moteurGaucheFollower.GetAppliedOutput();
-            m_LogFile->Log(m_encodeurExterneDroite.GetDistance(),
-                           m_encodeurExterneGauche.GetDistance(),
-                           m_encodeurDroite1.GetPosition(),
-                           m_encodeurDroite2.GetPosition(),
-                           m_encodeurGauche1.GetPosition(),
-                           m_encodeurGauche2.GetPosition(),
+            m_LogFile->Log(m_encodeurExterneDroite.Get(),
+                           m_encodeurExterneGauche.Get(),
+                           m_encodeurExterneDroite.GetRaw(),
+                           m_encodeurExterneGauche.GetRaw(),
                            m_imu.GetAngle(),
                            TestData[CurrentTestID].m_voltage,
                            m_moteurDroite.GetBusVoltage(),
@@ -368,17 +365,24 @@ void Robot::AutonomousPeriodic() {}
 
 void Robot::TeleopInit()
 {
-    m_encodeurExterneDroite.Reset();
+    /*     filterX.Reset();
+    filterY.Reset(); */
 
+    //m_imu.ConfigCalTime(frc::ADIS16470CalibrationTime::_4s);
+    //m_imu.Calibrate();
+
+    m_encodeurExterneDroite.Reset();
     m_encodeurExterneGauche.Reset();
+    init_x = m_imu.GetAccelInstantX();
+    init_y = m_imu.GetAccelInstantY();
 }
 
 void Robot::TeleopPeriodic()
 {
     //std::cout << m_imu.GetAngle() << std::endl;
     //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
-    m_speedY.SetDouble(m_imu.GetAccelInstantY());
-    m_speedX.SetDouble(m_imu.GetAccelInstantX());
+    m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
+    m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 
     /*if (m_driverController.GetAButton())
@@ -466,7 +470,7 @@ void Robot::TeleopPeriodic()
 
         if (m_isLogging)
         {
-            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "Right", "Left", "neoD1", "neoD2", "neoG1", "neoG2", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilenameDriving.SetString(m_LogFileDriving->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -479,7 +483,25 @@ void Robot::TeleopPeriodic()
 
     if (m_isLogging)
     {
-        m_LogFileDriving->Log(m_encodeurExterneDroite.GetDistance(), m_encodeurExterneGauche.GetDistance(), m_encodeurDroite1.GetPosition(), m_encodeurDroite2.GetPosition(), m_encodeurGauche1.GetPosition(), m_encodeurGauche2.GetPosition(), m_imu.GetAngle(), TestData[CurrentTestID].m_voltage, m_moteurDroite.GetBusVoltage(), m_moteurDroiteFollower.GetBusVoltage(), m_moteurGauche.GetBusVoltage(), m_moteurGaucheFollower.GetBusVoltage(), m_moteurDroite.GetAppliedOutput(), m_moteurDroiteFollower.GetAppliedOutput(), m_moteurGauche.GetAppliedOutput(), m_moteurGaucheFollower.GetAppliedOutput(), m_moteurDroite.GetOutputCurrent(), m_moteurDroiteFollower.GetOutputCurrent(), m_moteurGauche.GetOutputCurrent(), m_moteurGaucheFollower.GetOutputCurrent(), m_ramp);
+        m_LogFileDriving->Log(m_encodeurExterneDroite.Get(),
+                              m_encodeurExterneGauche.Get(),
+                              m_encodeurExterneDroite.GetRaw(),
+                              m_encodeurExterneGauche.GetRaw(),
+                              m_imu.GetAngle(),
+                              TestData[CurrentTestID].m_voltage,
+                              m_moteurDroite.GetBusVoltage(),
+                              m_moteurDroiteFollower.GetBusVoltage(),
+                              m_moteurGauche.GetBusVoltage(),
+                              m_moteurGaucheFollower.GetBusVoltage(),
+                              m_moteurDroite.GetAppliedOutput(),
+                              m_moteurDroiteFollower.GetAppliedOutput(),
+                              m_moteurGauche.GetAppliedOutput(),
+                              m_moteurGaucheFollower.GetAppliedOutput(),
+                              m_moteurDroite.GetOutputCurrent(),
+                              m_moteurDroiteFollower.GetOutputCurrent(),
+                              m_moteurGauche.GetOutputCurrent(),
+                              m_moteurGaucheFollower.GetOutputCurrent(),
+                              m_ramp);
         //std::cout << mg0 << " " << mg1 << " " << md0 << " " << md1 << std::endl;
         //std::cout << m_encodeurExterneDroite.GetDistance() << std::endl;
     }
