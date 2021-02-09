@@ -7,8 +7,14 @@
 
 #pragma once
 
+#define XBOX_CONTROLLER false
+
 #include <frc/TimedRobot.h>
+#if XBOX_CONTROLLER
 #include <frc/XboxController.h>
+#else
+#include <frc/Joystick.h>
+#endif
 #include <frc/DoubleSolenoid.h>
 #include <frc/Encoder.h>
 #include <rev/CANSparkMax.h>
@@ -76,7 +82,6 @@ private:
 
   //frc::DoubleSolenoid m_solenoidDoigt{2, 3};
 
-  frc::XboxController m_driverController{0};
   frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
   frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
 
@@ -102,6 +107,13 @@ private:
     m_LogFilename = frc::Shuffleboard::GetTab("Shooter").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
   */
 
-  void
-  LogData();
+  void LogData();
+
+#if XBOX_CONTROLLER
+  frc::XboxController m_driverController{0};
+#else
+  frc::Joystick m_leftHandController{0};
+  frc::Joystick m_rightHandController{1};
+  double reduction_factor = 1.75;
+#endif
 };

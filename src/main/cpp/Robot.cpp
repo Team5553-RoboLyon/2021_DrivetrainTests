@@ -135,8 +135,8 @@ void Robot::DriveOld(double forward, double turn)
     if (!m_override)
     {
         //std::cout<<forward<<std::endl;
-        forward = Deadband(forward);
-        turn = Deadband(turn, 0.2);
+        forward = Deadband(forward, 0.1);
+        turn = Deadband(turn, 0.1);
 
         /*
     double c = 0.35 * (turn * 5.0 * (abs(turn) + 1) / (abs(forward) + 1));
@@ -186,13 +186,13 @@ void Robot::DriveOld(double forward, double turn)
     }
 }
 
-void Robot::Drive(double jy, double jx)
+void Robot::Drive(double jx, double jy)
 {
     jy = Deadband(jy, 0.1);
     jx = Deadband(jx, 0.2);
     std::cout << jy << "       " << jx << std::endl;
 
-    getSpeedsAndAccelerations(&m_va_left, &m_va_right, &m_va_max, jx, jy);
+    getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
@@ -295,8 +295,8 @@ void Robot::RobotInit()
     //Right 2 Backward
     m_kv.SetMotorCoefficients(3, 1, 2.8023545366303493, 0.3915668240840841, -0.15437240108228778);
 
-    m_va_max.m_speed = 3;
-    m_va_max.m_acceleration = 5;
+    m_va_max.m_speed = 3.5;
+    m_va_max.m_acceleration = 20;
 
     m_va_left.m_speed = 0;
     m_va_left.m_acceleration = 0;
@@ -383,7 +383,11 @@ void Robot::TeleopPeriodic()
     //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
     m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
     m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
+#if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+#else:
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() / reduction_factor);
+#endif
 
     /*if (m_driverController.GetAButton())
     {
@@ -393,7 +397,7 @@ void Robot::TeleopPeriodic()
     {
         m_moteurIntake.Set(0);
     }*/
-
+#if XBOX_CONTROLLER
     if (m_driverController.GetBButtonPressed() && (!m_override))
     {
         CurrentTestID += 1;
@@ -570,6 +574,16 @@ void Robot::TeleopPeriodic()
     {
         m_moteurTreuil.Set(0);
     }
+#else
+    if (m_rightHandController.GetRawButton(2))
+    {
+        reduction_factor = 1;
+    }
+    else
+    {
+        reduction_factor = 1.75;
+    }
+#endif
 }
 
 void Robot::TestInit() {}
