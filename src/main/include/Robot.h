@@ -8,6 +8,7 @@
 #pragma once
 
 #define XBOX_CONTROLLER false
+#define IMU false
 
 #include <frc/TimedRobot.h>
 #if XBOX_CONTROLLER
@@ -24,7 +25,9 @@
 #include "lib/CSVLogFile.h"
 #include "lib/CustomMaths.h"
 #include "Joystick.h"
+#if IMU
 #include <adi/ADIS16470_IMU.h>
+#endif
 #include <frc/LinearFilter.h>
 
 class Robot : public frc::TimedRobot
@@ -60,7 +63,11 @@ private:
   frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
   frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
 
+#if IMU
   frc::ADIS16470_IMU m_imu{};
+  frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
+  frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
+#endif
 
   frc::PWMSparkMax m_moteurTreuil{5};
 
@@ -81,9 +88,6 @@ private:
   //frc::DoubleSolenoid m_solenoidClimber1{0, 1};
 
   //frc::DoubleSolenoid m_solenoidDoigt{2, 3};
-
-  frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
-  frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
 
   char m_invertedPrefix[8];
 

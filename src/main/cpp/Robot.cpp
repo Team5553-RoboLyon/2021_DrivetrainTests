@@ -237,8 +237,10 @@ void Robot::RobotInit()
 
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+#if IMU
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+#endif
     //frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
@@ -306,7 +308,7 @@ void Robot::RobotInit()
         switch (m_logState)
         {
         case 1:
-            m_LogFile = new CSVLogFile(m_prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFile = new CSVLogFile(m_prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilename.SetString(m_LogFile->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -331,7 +333,6 @@ void Robot::RobotInit()
                            m_encodeurExterneGauche.Get(),
                            m_encodeurExterneDroite.GetRaw(),
                            m_encodeurExterneGauche.GetRaw(),
-                           m_imu.GetAngle(),
                            TestData[CurrentTestID].m_voltage,
                            m_moteurDroite.GetBusVoltage(),
                            m_moteurDroiteFollower.GetBusVoltage(),
@@ -373,16 +374,20 @@ void Robot::TeleopInit()
 
     m_encodeurExterneDroite.Reset();
     m_encodeurExterneGauche.Reset();
+#if IMU
     init_x = m_imu.GetAccelInstantX();
     init_y = m_imu.GetAccelInstantY();
+#endif
 }
 
 void Robot::TeleopPeriodic()
 {
-    //std::cout << m_imu.GetAngle() << std::endl;
-    //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+//std::cout << m_imu.GetAngle() << std::endl;
+//DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+#if IMU
     m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
     m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
+#endif
 #if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
@@ -474,7 +479,7 @@ void Robot::TeleopPeriodic()
 
         if (m_isLogging)
         {
-            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilenameDriving.SetString(m_LogFileDriving->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -491,7 +496,6 @@ void Robot::TeleopPeriodic()
                               m_encodeurExterneGauche.Get(),
                               m_encodeurExterneDroite.GetRaw(),
                               m_encodeurExterneGauche.GetRaw(),
-                              m_imu.GetAngle(),
                               TestData[CurrentTestID].m_voltage,
                               m_moteurDroite.GetBusVoltage(),
                               m_moteurDroiteFollower.GetBusVoltage(),
