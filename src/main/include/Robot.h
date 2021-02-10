@@ -7,9 +7,7 @@
 
 #pragma once
 
-#define XBOX_CONTROLLER false
-#define IMU false
-
+#include <Constants.h>
 #include <frc/TimedRobot.h>
 #if XBOX_CONTROLLER
 #include <frc/XboxController.h>
@@ -118,6 +116,6 @@ private:
 #else
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
-  double reduction_factor = 1.75;
+  double reduction_factor = 0.6;
 #endif
 };

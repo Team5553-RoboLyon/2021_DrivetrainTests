@@ -140,7 +140,7 @@ void getSpeedsAndAccelerations(VA *pva_left, VA *pva_right, const VA *pvamax, co
     }
 }
 
-void getSpeedsAndAccelerationsNew(VA *pva_left, VA *pva_right, const VA *pvamax, const double jx, const double jy)
+void getSpeedsAndAccelerationsNew(VA *pva_left, VA *pva_right, const VA *pva_max, const double jx, const double jy)
 {
     double target_left_speed;
     double target_right_speed;
@@ -161,46 +161,31 @@ void getSpeedsAndAccelerationsNew(VA *pva_left, VA *pva_right, const VA *pvamax,
     target_left_speed = lwheel * VMAX;
     target_right_speed = rwheel * VMAX;
 
+    updateVelocityAndAcceleration(pva_left, pva_max, target_left_speed, 0.02);
+    updateVelocityAndAcceleration(pva_right, pva_max, target_right_speed, 0.02);
+}
+
+void updateVelocityAndAcceleration(VA *pva, const VA *pva_max, const double target_speed, const double dt)
+{
     double acc;
     double v_diff;
 
-    //Left side
-    acc = pvamax->m_acceleration * 0.02;
-    v_diff = target_left_speed - pva_left->m_speed;
+    acc = pva_max->m_acceleration * dt;
+    v_diff = target_speed - pva->m_speed;
 
     if (v_diff < -acc)
     {
-        pva_left->m_speed -= acc;
-        pva_left->m_acceleration = pvamax->m_acceleration;
+        pva->m_speed -= acc;
+        pva->m_acceleration = pva_max->m_acceleration;
     }
     else if (v_diff > acc)
     {
-        pva_left->m_speed += acc;
-        pva_left->m_acceleration = pvamax->m_acceleration;
+        pva->m_speed += acc;
+        pva->m_acceleration = pva_max->m_acceleration;
     }
     else
     {
-        pva_left->m_speed = target_left_speed;
-        pva_left->m_acceleration = 0;
-    }
-
-    //Right side
-    acc = pvamax->m_acceleration * 0.02;
-    v_diff = target_right_speed - pva_right->m_speed;
-
-    if (v_diff < -acc)
-    {
-        pva_right->m_speed -= acc;
-        pva_right->m_acceleration = pvamax->m_acceleration;
-    }
-    else if (v_diff > acc)
-    {
-        pva_right->m_speed += acc;
-        pva_right->m_acceleration = pvamax->m_acceleration;
-    }
-    else
-    {
-        pva_right->m_speed = target_right_speed;
-        pva_right->m_acceleration = 0;
+        pva->m_speed = target_speed;
+        pva->m_acceleration = 0;
     }
 }

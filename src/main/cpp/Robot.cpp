@@ -202,12 +202,10 @@ void Robot::Drive(double jx, double jy)
 
 void Robot::RobotInit()
 {
-    /*m_moteurDroite.RestoreFactoryDefaults();
+    m_moteurDroite.RestoreFactoryDefaults();
     m_moteurGauche.RestoreFactoryDefaults();
     m_moteurDroiteFollower.RestoreFactoryDefaults();
     m_moteurGaucheFollower.RestoreFactoryDefaults();
-    m_moteurGaucheShooter.RestoreFactoryDefaults();
-    m_moteurDroiteShooter.RestoreFactoryDefaults();*/
 
     m_moteurDroite.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurGauche.SetOpenLoopRampRate(TIME_RAMP);
@@ -223,12 +221,12 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.DisableVoltageCompensation();
     m_moteurDroite.DisableVoltageCompensation();
     m_moteurDroiteFollower.DisableVoltageCompensation();
-
+#if BRAKE_MODE
     m_moteurDroite.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGauche.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurDroiteFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGaucheFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
-
+#endif
     /*m_moteurGauche.SetClosedLoopRampRate(0.5);
     m_moteurGaucheFollower.SetClosedLoopRampRate(0.5);
     m_moteurDroite.SetClosedLoopRampRate(0.5);
@@ -382,16 +380,17 @@ void Robot::TeleopInit()
 
 void Robot::TeleopPeriodic()
 {
-//std::cout << m_imu.GetAngle() << std::endl;
-//DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+    //std::cout << m_imu.GetAngle() << std::endl;
+    //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #if IMU
     m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
     m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
 #endif
+
 #if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() / reduction_factor);
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() * reduction_factor);
 #endif
 
     /*if (m_driverController.GetAButton())
@@ -585,7 +584,7 @@ void Robot::TeleopPeriodic()
     }
     else
     {
-        reduction_factor = 1.75;
+        reduction_factor = 0.6;
     }
 #endif
 }
