@@ -52,7 +52,7 @@ private:
   KineticToVoltage m_kv;
 
   CSVLogFile *m_LogFile, *m_LogFileDriving;
-  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX;
+  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX, m_customEntry;
   rev::CANSparkMax m_moteurDroite{1, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};

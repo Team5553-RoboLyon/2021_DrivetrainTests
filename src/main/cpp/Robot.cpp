@@ -136,7 +136,7 @@ void Robot::DriveOld(double forward, double turn)
     {
         //std::cout<<forward<<std::endl;
         forward = Deadband(forward, 0.1);
-        turn = Deadband(turn, 0.1);
+        turn = Deadband(turn, 0.2);
 
         /*
     double c = 0.35 * (turn * 5.0 * (abs(turn) + 1) / (abs(forward) + 1));
@@ -189,7 +189,7 @@ void Robot::DriveOld(double forward, double turn)
 void Robot::Drive(double jx, double jy)
 {
     jy = Deadband(jy, 0.1);
-    jx = Deadband(jx, 0.2);
+    jx = Deadband(jx, 0.1);
     std::cout << jy << "       " << jx << std::endl;
 
     getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
@@ -221,12 +221,10 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.DisableVoltageCompensation();
     m_moteurDroite.DisableVoltageCompensation();
     m_moteurDroiteFollower.DisableVoltageCompensation();
-#if BRAKE_MODE
     m_moteurDroite.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGauche.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurDroiteFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGaucheFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
-#endif
     /*m_moteurGauche.SetClosedLoopRampRate(0.5);
     m_moteurGaucheFollower.SetClosedLoopRampRate(0.5);
     m_moteurDroite.SetClosedLoopRampRate(0.5);
@@ -235,6 +233,7 @@ void Robot::RobotInit()
 
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #if IMU
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
@@ -279,24 +278,24 @@ void Robot::RobotInit()
     //m_solenoidDoigt.Set(frc::DoubleSolenoid::Value::kForward);
 
     //Left 1 Forward
-    m_kv.SetMotorCoefficients(0, 0, 2.8149691270078727, 0.45110716800617084, 0.11862997169896072);
+    m_kv.SetMotorCoefficients(0, 0, 2.815697532731544, 0.4694670372587819, 0.11096684006625335);
     //Left 2 Forward
-    m_kv.SetMotorCoefficients(1, 0, 2.816131678616728, 0.44998083818275764, 0.11749757285780937);
+    m_kv.SetMotorCoefficients(1, 0, 2.8171477288641165, 0.478564016576128, 0.10975114086308402);
     //Right 1 Forward
-    m_kv.SetMotorCoefficients(2, 0, 2.811025373489477, 0.42131875871913615, 0.13963854971517176);
+    m_kv.SetMotorCoefficients(2, 0, 2.8024631236903135, 0.4403635472698452, 0.10741975250277491);
     //Right 2 Forward
-    m_kv.SetMotorCoefficients(3, 0, 2.812384199475958, 0.4233131860594181, 0.13835166836146584);
+    m_kv.SetMotorCoefficients(3, 0, 2.801981945589249, 0.43687098372033967, 0.10747542821680156);
     //Left 1 Backward
-    m_kv.SetMotorCoefficients(0, 1, 2.8462088688557325, 0.3633894701736762, -0.09102164579231165);
+    m_kv.SetMotorCoefficients(0, 1, 2.8526153046254596, 0.4060315027282673, -0.08529919470860658);
     //Left 2 Backward
-    m_kv.SetMotorCoefficients(1, 1, 2.846837565553953, 0.35792376754497357, -0.09047571972479762);
+    m_kv.SetMotorCoefficients(1, 1, 2.853672567242419, 0.40031111541410647, -0.08431872256237849);
     //Right 1 Backward
-    m_kv.SetMotorCoefficients(2, 1, 2.801029265584793, 0.3784532241367712, -0.155533835192184);
+    m_kv.SetMotorCoefficients(2, 1, 2.7974216902473548, 0.38833514223084226, -0.10863199131460277);
     //Right 2 Backward
-    m_kv.SetMotorCoefficients(3, 1, 2.8023545366303493, 0.3915668240840841, -0.15437240108228778);
+    m_kv.SetMotorCoefficients(3, 1, 2.7967290044994533, 0.38680645837677974, -0.10898343976134406);
 
     m_va_max.m_speed = 3.5;
-    m_va_max.m_acceleration = 20;
+    m_va_max.m_acceleration = 3;
 
     m_va_left.m_speed = 0;
     m_va_left.m_acceleration = 0;
@@ -578,14 +577,16 @@ void Robot::TeleopPeriodic()
         m_moteurTreuil.Set(0);
     }
 #else
-    if (m_rightHandController.GetRawButton(2))
+    reduction_factor = 1 - m_rightHandController.GetThrottle();
+    m_customEntry.SetDouble(reduction_factor);
+    /*if (m_rightHandController.GetRawButton(2))
     {
         reduction_factor = 1;
     }
     else
     {
         reduction_factor = 0.6;
-    }
+    }*/
 #endif
 }
 
