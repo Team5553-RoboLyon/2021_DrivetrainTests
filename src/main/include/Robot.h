@@ -116,6 +116,6 @@ private:
 #else
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
-  double reduction_factor = 0.6;
+  double m_turnAdjustFactor = 0.6;
 #endif
 };
