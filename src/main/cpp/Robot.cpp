@@ -16,9 +16,7 @@
 
 #define AMAX 5.1 // Acceleration Max  au PIF .. à définir aux encodeurs
 #define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
-#define WMAX                       \
-    (((2.0 * VMAX) / TRACKWIDTH) / \
-     1.7) // vitesse angulaire Max theorique	.. à modifier avec Garice
+#define WMAX   ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
 
 // Flags Manipulation
 #define FLAG_TOGGLE(val, flag) ((val) ^= (flag))
@@ -148,7 +146,7 @@ void Robot::DriveOld(double forward, double turn)
     }*/
 
         double v = forward * VMAX;
-        double w = turn * WMAX;
+        double w = turn * WMAX * m_turnAdjustFactor;
 
         // w = m_drivetrain->CalculateTurn(forward, w);
 
@@ -389,7 +387,7 @@ void Robot::TeleopPeriodic()
 #if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() * reduction_factor);
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() );
 #endif
 
     /*if (m_driverController.GetAButton())
@@ -577,8 +575,8 @@ void Robot::TeleopPeriodic()
         m_moteurTreuil.Set(0);
     }
 #else
-    reduction_factor = 1 - m_rightHandController.GetThrottle();
-    m_customEntry.SetDouble(reduction_factor);
+    m_turnAdjustFactor = (m_rightHandController.GetThrottle() + 1.0)/2.0;
+    m_customEntry.SetDouble(m_turnAdjustFactor);
     /*if (m_rightHandController.GetRawButton(2))
     {
         reduction_factor = 1;
