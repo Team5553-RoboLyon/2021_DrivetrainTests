@@ -2,6 +2,42 @@
 #include <stdio.h>
 #include <iostream>
 
+#define TRACKWIDTH 0.61f
+#define HALF_TRACKWIDTH (TRACKWIDTH / 2.0f)
+
+#define AMAX 5.1 // Acceleration Max  au PIF .. à définir aux encodeurs
+#define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
+#define WMAX                       \
+    (((2.0 * VMAX) / TRACKWIDTH) / \
+     1.7) // vitesse angulaire Max theorique	.. à modifier avec Garice
+
+// Flags Manipulation
+#define FLAG_TOGGLE(val, flag) ((val) ^= (flag))
+#define FLAG_ON(val, flag) ((val) |= (flag))
+#define FLAG_OFF(val, flag) ((val) &= ~(flag))
+#define ISFLAG_ON(val, flag) ((val) & (flag))                                   // !! ZERO or NON ZERO value !!! BE AWARE THAT NON ZERO DOESN'T MEAN 1 !!!
+#define ISFLAG_OFF(val, flag) (!((val) & (flag)))                               // !! ZERO or NON ZERO value !!! BE AWARE THAT NON ZERO DOESN'T MEAN 1 !!!
+#define FLAGS_TEST(val, bmask, flags) (((val) & (bmask)) == (flags))            // NFALSE or NTRUE
+#define SET_FLAGS(val, bmask, flags) ((val) = (((val) & (~(bmask))) | (flags))) // RESET FLAGS BITS and Set them all like flags.
+#define RESET_FLAGS(val, bmask)		((val)&=~(bmask)))						// Set all FLAGS BITS to ZERO
+
+#define VOLTAGE_COMPENSATION_VALUE 11.5
+// TEST *********************************************
+#define TEST_LOWVOLTAGE_NB 10    // Nombre de tests ( subdivisions ) sur l'intervalle ]0,TEST_LOWVOLTAGE_MAX] volts						... 10 ou 20 ?
+#define TEST_LOWVOLTAGE_MAX 0.15 // Volts
+
+#define TEST_MEDIUMVOLTAGE_NB 5    // Nombre de tests ( subdivisions ) sur l'intervalle ]TEST_LOWVOLTAGE_MAX,TEST_MEDIUMVOLTAGE_MAX] volts	... 20 ou 25 ?
+#define TEST_MEDIUMVOLTAGE_MAX 1.0 // Volts
+
+#define TEST_HIGHVOLTAGE_NB 44    // Nombre de tests ( subdivisions ) sur l'intervalle ]TEST_MEDIUMVOLTAGE_MAX,TEST_HIGHVOLTAGE_MAX] volts... 12 ou 24 ?
+#define TEST_HIGHVOLTAGE_MAX 12.0 // Volts
+
+#define TEST_TOTAL_NB (TEST_LOWVOLTAGE_NB + TEST_MEDIUMVOLTAGE_NB + TEST_HIGHVOLTAGE_NB)
+
+#define FLAG_TestSpecs_Done 1
+
+#define TIME_RAMP 0.6
+
 // Differential Steering Joystick Algorithm
 // ========================================
 // Converts a single dual-axis joystick into a differential
@@ -22,7 +58,7 @@ void getSpeedsAndAccelerations(VA *pva_left, VA *pva_right, const VA *pvamax, co
     //                away from the X-axis (Y=0). A greater value will assign
     //                more of the joystick's range to pivot actions.
     //                Allowable range: (0..1)
-    double blend_threshold = 0.75;
+    double blend_threshold = 0.5;
 
     if (jy >= 0)
     {
@@ -102,5 +138,54 @@ void getSpeedsAndAccelerations(VA *pva_left, VA *pva_right, const VA *pvamax, co
         pva_right->m_speed = target_right_speed;
         pva_right->m_acceleration = 0;
     }
-    std::cout << "vitesse : " << pva_right->m_speed << "   " << pva_left->m_speed << std::endl;
+}
+
+void getSpeedsAndAccelerationsNew(VA *pva_left, VA *pva_right, const VA *pva_max, const double jx, const double jy)
+{
+    double target_left_speed;
+    double target_right_speed;
+
+    double v = jx * VMAX;
+    double w = jy * WMAX;
+
+    // w = m_drivetrain->CalculateTurn(forward, w);
+
+    double lwheel = v + (w * HALF_TRACKWIDTH);
+    double rwheel = v - (w * HALF_TRACKWIDTH);
+
+    double k;
+    k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
+    lwheel *= k;
+    rwheel *= k;
+
+    target_left_speed = lwheel * VMAX;
+    target_right_speed = rwheel * VMAX;
+
+    updateVelocityAndAcceleration(pva_left, pva_max, target_left_speed, 0.02);
+    updateVelocityAndAcceleration(pva_right, pva_max, target_right_speed, 0.02);
+}
+
+void updateVelocityAndAcceleration(VA *pva, const VA *pva_max, const double target_speed, const double dt)
+{
+    double acc;
+    double v_diff;
+
+    acc = pva_max->m_acceleration * dt;
+    v_diff = target_speed - pva->m_speed;
+
+    if (v_diff < -acc)
+    {
+        pva->m_speed -= acc;
+        pva->m_acceleration = pva_max->m_acceleration;
+    }
+    else if (v_diff > acc)
+    {
+        pva->m_speed += acc;
+        pva->m_acceleration = pva_max->m_acceleration;
+    }
+    else
+    {
+        pva->m_speed = target_speed;
+        pva->m_acceleration = 0;
+    }
 }

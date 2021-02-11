@@ -130,12 +130,12 @@ double Deadband(double value, double deadband = 0.1)
         return value < 0 ? (value + deadband) / (1.0 - deadband) : (value - deadband) / (1.0 - deadband);
 }
 
-void Robot::Drive(double forward, double turn)
+void Robot::DriveOld(double forward, double turn)
 {
     if (!m_override)
     {
         //std::cout<<forward<<std::endl;
-        forward = Deadband(forward);
+        forward = Deadband(forward, 0.1);
         turn = Deadband(turn, 0.2);
 
         /*
@@ -186,13 +186,13 @@ void Robot::Drive(double forward, double turn)
     }
 }
 
-void Robot::DriveOld(double jy, double jx)
+void Robot::Drive(double jx, double jy)
 {
     jy = Deadband(jy, 0.1);
-    jx = Deadband(jx, 0.2);
+    jx = Deadband(jx, 0.1);
     std::cout << jy << "       " << jx << std::endl;
 
-    getSpeedsAndAccelerations(&m_va_left, &m_va_right, &m_va_max, jx, jy);
+    getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
@@ -202,12 +202,10 @@ void Robot::DriveOld(double jy, double jx)
 
 void Robot::RobotInit()
 {
-    /*m_moteurDroite.RestoreFactoryDefaults();
+    m_moteurDroite.RestoreFactoryDefaults();
     m_moteurGauche.RestoreFactoryDefaults();
     m_moteurDroiteFollower.RestoreFactoryDefaults();
     m_moteurGaucheFollower.RestoreFactoryDefaults();
-    m_moteurGaucheShooter.RestoreFactoryDefaults();
-    m_moteurDroiteShooter.RestoreFactoryDefaults();*/
 
     m_moteurDroite.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurGauche.SetOpenLoopRampRate(TIME_RAMP);
@@ -223,12 +221,10 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.DisableVoltageCompensation();
     m_moteurDroite.DisableVoltageCompensation();
     m_moteurDroiteFollower.DisableVoltageCompensation();
-
     m_moteurDroite.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGauche.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurDroiteFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGaucheFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
-
     /*m_moteurGauche.SetClosedLoopRampRate(0.5);
     m_moteurGaucheFollower.SetClosedLoopRampRate(0.5);
     m_moteurDroite.SetClosedLoopRampRate(0.5);
@@ -237,8 +233,11 @@ void Robot::RobotInit()
 
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+#if IMU
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+#endif
     //frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
@@ -279,24 +278,24 @@ void Robot::RobotInit()
     //m_solenoidDoigt.Set(frc::DoubleSolenoid::Value::kForward);
 
     //Left 1 Forward
-    m_kv.SetMotorCoefficients(0, 0, 2.80842, 0.16071, 0.1467);
+    m_kv.SetMotorCoefficients(0, 0, 2.815697532731544, 0.4694670372587819, 0.11096684006625335);
     //Left 2 Forward
-    m_kv.SetMotorCoefficients(1, 0, 2.80833, 0.1549, 0.14571);
+    m_kv.SetMotorCoefficients(1, 0, 2.8171477288641165, 0.478564016576128, 0.10975114086308402);
     //Right 1 Forward
-    m_kv.SetMotorCoefficients(2, 0, 2.80423, 0.13559, 0.16904);
+    m_kv.SetMotorCoefficients(2, 0, 2.8024631236903135, 0.4403635472698452, 0.10741975250277491);
     //Right 2 Forward
-    m_kv.SetMotorCoefficients(3, 0, 2.80524, 0.13376, 0.16744);
+    m_kv.SetMotorCoefficients(3, 0, 2.801981945589249, 0.43687098372033967, 0.10747542821680156);
     //Left 1 Backward
-    m_kv.SetMotorCoefficients(0, 1, 2.80397, 0.14271, -0.15557);
+    m_kv.SetMotorCoefficients(0, 1, 2.8526153046254596, 0.4060315027282673, -0.08529919470860658);
     //Left 2 Backward
-    m_kv.SetMotorCoefficients(1, 1, 2.80367, 0.13479, -0.15524);
+    m_kv.SetMotorCoefficients(1, 1, 2.853672567242419, 0.40031111541410647, -0.08431872256237849);
     //Right 1 Backward
-    m_kv.SetMotorCoefficients(2, 1, 2.83487, 0.12593, -0.14335);
+    m_kv.SetMotorCoefficients(2, 1, 2.7974216902473548, 0.38833514223084226, -0.10863199131460277);
     //Right 2 Backward
-    m_kv.SetMotorCoefficients(3, 1, 2.83517, 0.12205, -0.14276);
+    m_kv.SetMotorCoefficients(3, 1, 2.7967290044994533, 0.38680645837677974, -0.10898343976134406);
 
-    m_va_max.m_speed = 3;
-    m_va_max.m_acceleration = 5;
+    m_va_max.m_speed = 3.5;
+    m_va_max.m_acceleration = 3;
 
     m_va_left.m_speed = 0;
     m_va_left.m_acceleration = 0;
@@ -306,7 +305,7 @@ void Robot::RobotInit()
         switch (m_logState)
         {
         case 1:
-            m_LogFile = new CSVLogFile(m_prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFile = new CSVLogFile(m_prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilename.SetString(m_LogFile->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -331,7 +330,6 @@ void Robot::RobotInit()
                            m_encodeurExterneGauche.Get(),
                            m_encodeurExterneDroite.GetRaw(),
                            m_encodeurExterneGauche.GetRaw(),
-                           m_imu.GetAngle(),
                            TestData[CurrentTestID].m_voltage,
                            m_moteurDroite.GetBusVoltage(),
                            m_moteurDroiteFollower.GetBusVoltage(),
@@ -373,17 +371,26 @@ void Robot::TeleopInit()
 
     m_encodeurExterneDroite.Reset();
     m_encodeurExterneGauche.Reset();
+#if IMU
     init_x = m_imu.GetAccelInstantX();
     init_y = m_imu.GetAccelInstantY();
+#endif
 }
 
 void Robot::TeleopPeriodic()
 {
     //std::cout << m_imu.GetAngle() << std::endl;
     //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+#if IMU
     m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
     m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
+#endif
+
+#if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+#else:
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() * reduction_factor);
+#endif
 
     /*if (m_driverController.GetAButton())
     {
@@ -393,7 +400,7 @@ void Robot::TeleopPeriodic()
     {
         m_moteurIntake.Set(0);
     }*/
-
+#if XBOX_CONTROLLER
     if (m_driverController.GetBButtonPressed() && (!m_override))
     {
         CurrentTestID += 1;
@@ -470,7 +477,7 @@ void Robot::TeleopPeriodic()
 
         if (m_isLogging)
         {
-            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "gyro", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
+            m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             m_LogFilenameDriving.SetString(m_LogFileDriving->GetFileName());
             m_encodeurExterneDroite.Reset();
             m_encodeurExterneGauche.Reset();
@@ -487,7 +494,6 @@ void Robot::TeleopPeriodic()
                               m_encodeurExterneGauche.Get(),
                               m_encodeurExterneDroite.GetRaw(),
                               m_encodeurExterneGauche.GetRaw(),
-                              m_imu.GetAngle(),
                               TestData[CurrentTestID].m_voltage,
                               m_moteurDroite.GetBusVoltage(),
                               m_moteurDroiteFollower.GetBusVoltage(),
@@ -570,6 +576,18 @@ void Robot::TeleopPeriodic()
     {
         m_moteurTreuil.Set(0);
     }
+#else
+    reduction_factor = 1 - m_rightHandController.GetThrottle();
+    m_customEntry.SetDouble(reduction_factor);
+    /*if (m_rightHandController.GetRawButton(2))
+    {
+        reduction_factor = 1;
+    }
+    else
+    {
+        reduction_factor = 0.6;
+    }*/
+#endif
 }
 
 void Robot::TestInit() {}

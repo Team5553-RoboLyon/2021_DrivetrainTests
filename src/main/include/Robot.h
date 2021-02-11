@@ -7,8 +7,13 @@
 
 #pragma once
 
+#include <Constants.h>
 #include <frc/TimedRobot.h>
+#if XBOX_CONTROLLER
 #include <frc/XboxController.h>
+#else
+#include <frc/Joystick.h>
+#endif
 #include <frc/DoubleSolenoid.h>
 #include <frc/Encoder.h>
 #include <rev/CANSparkMax.h>
@@ -18,7 +23,9 @@
 #include "lib/CSVLogFile.h"
 #include "lib/CustomMaths.h"
 #include "Joystick.h"
+#if IMU
 #include <adi/ADIS16470_IMU.h>
+#endif
 #include <frc/LinearFilter.h>
 
 class Robot : public frc::TimedRobot
@@ -45,7 +52,7 @@ private:
   KineticToVoltage m_kv;
 
   CSVLogFile *m_LogFile, *m_LogFileDriving;
-  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX;
+  nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX, m_customEntry;
   rev::CANSparkMax m_moteurDroite{1, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
@@ -54,7 +61,11 @@ private:
   frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
   frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
 
+#if IMU
   frc::ADIS16470_IMU m_imu{};
+  frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
+  frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
+#endif
 
   frc::PWMSparkMax m_moteurTreuil{5};
 
@@ -75,10 +86,6 @@ private:
   //frc::DoubleSolenoid m_solenoidClimber1{0, 1};
 
   //frc::DoubleSolenoid m_solenoidDoigt{2, 3};
-
-  frc::XboxController m_driverController{0};
-  frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
-  frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
 
   char m_invertedPrefix[8];
 
@@ -102,6 +109,13 @@ private:
     m_LogFilename = frc::Shuffleboard::GetTab("Shooter").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
   */
 
-  void
-  LogData();
+  void LogData();
+
+#if XBOX_CONTROLLER
+  frc::XboxController m_driverController{0};
+#else
+  frc::Joystick m_leftHandController{0};
+  frc::Joystick m_rightHandController{1};
+  double reduction_factor = 0.6;
+#endif
 };
