@@ -19,6 +19,7 @@
 #include "lib/CustomMaths.h"
 #include "Joystick.h"
 #include <adi/ADIS16470_IMU.h>
+#include <frc/LinearFilter.h>
 
 class Robot : public frc::TimedRobot
 {
@@ -49,14 +50,9 @@ private:
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGaucheFollower{3, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANEncoder m_encodeurDroite1{m_moteurDroite};
-  rev::CANEncoder m_encodeurDroite2{m_moteurDroiteFollower};
 
-  rev::CANEncoder m_encodeurGauche1{m_moteurGauche};
-  rev::CANEncoder m_encodeurGauche2{m_moteurGaucheFollower};
-
-  frc::Encoder m_encodeurExterneDroite{0, 1, true, frc::Encoder::k4X};
-  frc::Encoder m_encodeurExterneGauche{2, 3, false, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
 
   frc::ADIS16470_IMU m_imu{};
 
@@ -81,6 +77,8 @@ private:
   //frc::DoubleSolenoid m_solenoidDoigt{2, 3};
 
   frc::XboxController m_driverController{0};
+  frc::LinearFilter<double> filterX = frc::LinearFilter<double>::MovingAverage(64);
+  frc::LinearFilter<double> filterY = frc::LinearFilter<double>::MovingAverage(64);
 
   char m_invertedPrefix[8];
 
@@ -95,11 +93,15 @@ private:
   int m_logState = 0;
   char m_prefix[512];
 
+  double init_x;
+  double init_y;
+
   /*m_IsEnabledEntry = frc::Shuffleboard::GetTab("Shooter").Add("Is Shooter enabled", false).WithWidget(frc::BuiltInWidgets::kBooleanBox).GetEntry();
     m_PowerEntry = frc::Shuffleboard::GetTab("Shooter").Add("Power", 0.0).WithWidget(frc::BuiltInWidgets::kNumberSlider).GetEntry();
     m_LogEntry = frc::Shuffleboard::GetTab("Shooter").Add("Logging", false).WithWidget(frc::BuiltInWidgets::kToggleButton).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("Shooter").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
   */
 
-  void LogData();
+  void
+  LogData();
 };
