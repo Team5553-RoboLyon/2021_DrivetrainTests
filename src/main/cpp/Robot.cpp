@@ -14,9 +14,9 @@
 #define TRACKWIDTH 0.61f
 #define HALF_TRACKWIDTH (TRACKWIDTH / 2.0f)
 
-#define AMAX 5.1 // Acceleration Max  au PIF .. à définir aux encodeurs
-#define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
-#define WMAX   ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
+#define AMAX 5.1                         // Acceleration Max  au PIF .. à définir aux encodeurs
+#define VMAX 3.4                         // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
+#define WMAX ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
 
 // Flags Manipulation
 #define FLAG_TOGGLE(val, flag) ((val) ^= (flag))
@@ -184,13 +184,30 @@ void Robot::DriveOld(double forward, double turn)
     }
 }
 
-void Robot::Drive(double jx, double jy)
+void Robot::Drive(double forward, double turn)
 {
-    jy = Deadband(jy, 0.1);
-    jx = Deadband(jx, 0.1);
-    std::cout << jy << "       " << jx << std::endl;
+    forward = Deadband(forward, 0.1);
+    turn = Deadband(turn, 0.1);
+    double v = forward * VMAX;
+    double w = turn * WMAX * m_turnAdjustFactor;
 
-    getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
+    // w = m_drivetrain->CalculateTurn(forward, w);
+
+    double lwheel = v + (w * HALF_TRACKWIDTH);
+    double rwheel = v - (w * HALF_TRACKWIDTH);
+
+    double k;
+    k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
+    lwheel *= k;
+    rwheel *= k;
+
+    double target_left_speed = lwheel * VMAX;
+    double target_right_speed = rwheel * VMAX;
+
+    //getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
+
+    updateVelocityAndAcceleration(&m_va_left, &m_va_max, target_left_speed, 0.02);
+    updateVelocityAndAcceleration(&m_va_right, &m_va_max, target_right_speed, 0.02);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
@@ -293,7 +310,8 @@ void Robot::RobotInit()
     m_kv.SetMotorCoefficients(3, 1, 2.7967290044994533, 0.38680645837677974, -0.10898343976134406);
 
     m_va_max.m_speed = 3.5;
-    m_va_max.m_acceleration = 3;
+    m_va_max.m_acceleration = 10;
+    m_va_max.m_jerk = 45;
 
     m_va_left.m_speed = 0;
     m_va_left.m_acceleration = 0;
@@ -387,7 +405,7 @@ void Robot::TeleopPeriodic()
 #if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ() );
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
 #endif
 
     /*if (m_driverController.GetAButton())
@@ -575,7 +593,7 @@ void Robot::TeleopPeriodic()
         m_moteurTreuil.Set(0);
     }
 #else
-    m_turnAdjustFactor = (m_rightHandController.GetThrottle() + 1.0)/2.0;
+    m_turnAdjustFactor = (m_rightHandController.GetThrottle() + 1.0) / 2.0;
     m_customEntry.SetDouble(m_turnAdjustFactor);
     /*if (m_rightHandController.GetRawButton(2))
     {

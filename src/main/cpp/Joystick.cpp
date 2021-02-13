@@ -173,19 +173,33 @@ void updateVelocityAndAcceleration(VA *pva, const VA *pva_max, const double targ
     acc = pva_max->m_acceleration * dt;
     v_diff = target_speed - pva->m_speed;
 
-    if (v_diff < -acc)
+    if (v_diff < 0)
     {
-        pva->m_speed -= acc;
-        pva->m_acceleration = pva_max->m_acceleration;
+        if (v_diff < -3.0f * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        {
+            pva->m_acceleration -= pva_max->m_jerk * dt;
+            if (pva->m_acceleration < -pva_max->m_acceleration)
+            {
+                pva->m_acceleration = -pva_max->m_acceleration;
+            }
+        }
     }
-    else if (v_diff > acc)
+    else if (v_diff > 0)
     {
-        pva->m_speed += acc;
-        pva->m_acceleration = pva_max->m_acceleration;
+        if (v_diff > 3.0f * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        {
+            pva->m_acceleration += pva_max->m_jerk * dt;
+            if (pva->m_acceleration > pva_max->m_acceleration)
+            {
+                pva->m_acceleration = pva_max->m_acceleration;
+            }
+        }
     }
     else
     {
-        pva->m_speed = target_speed;
-        pva->m_acceleration = 0;
+        std::cout << pva->m_acceleration << "    alors qu'elle devrait être nulle" << std::endl;
+        return;
     }
+
+    pva->m_speed += pva->m_acceleration * dt;
 }

@@ -7,6 +7,7 @@ struct VA
 {
   double m_speed;
   double m_acceleration;
+  double m_jerk;
 };
 
 class KineticToVoltage
