@@ -27,6 +27,7 @@
 #include <adi/ADIS16470_IMU.h>
 #endif
 #include <frc/LinearFilter.h>
+#include <frc/PowerDistributionPanel.h>
 
 class Robot : public frc::TimedRobot
 {
@@ -44,8 +45,12 @@ public:
 
   void DriveOld(double forward, double turn);
   void Drive(double jy, double jx);
+  void DriveA(double forward, double turn);
+  void DriveB();
 
 private:
+  double m_targetLeftSpeed;
+  double m_targetRightSpeed;
   VA m_va_left;
   VA m_va_right;
   VA m_va_max;
@@ -57,6 +62,8 @@ private:
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGaucheFollower{3, rev::CANSparkMax::MotorType::kBrushless};
+
+  frc::PowerDistributionPanel m_pdp;
 
   frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
   frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};

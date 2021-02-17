@@ -10,11 +10,12 @@
 #include <iostream>
 #include <frc/shuffleboard/Shuffleboard.h>
 #include <time.h>
+#include <units/units.h>
 
 #define TRACKWIDTH 0.61f
 #define HALF_TRACKWIDTH (TRACKWIDTH / 2.0f)
 
-#define AMAX 5.1                         // Acceleration Max  au PIF .. à définir aux encodeurs
+#define AMAX 5                           // Acceleration Max  au PIF .. à définir aux encodeurs
 #define VMAX 3.4                         // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
 #define WMAX ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
 
@@ -28,7 +29,7 @@
 #define SET_FLAGS(val, bmask, flags) ((val) = (((val) & (~(bmask))) | (flags))) // RESET FLAGS BITS and Set them all like flags.
 #define RESET_FLAGS(val, bmask)		((val)&=~(bmask)))						// Set all FLAGS BITS to ZERO
 
-#define VOLTAGE_COMPENSATION_VALUE 11.5
+#define VOLTAGE_COMPENSATION_VALUE 10
 // TEST *********************************************
 #define TEST_LOWVOLTAGE_NB 10    // Nombre de tests ( subdivisions ) sur l'intervalle ]0,TEST_LOWVOLTAGE_MAX] volts						... 10 ou 20 ?
 #define TEST_LOWVOLTAGE_MAX 0.15 // Volts
@@ -43,7 +44,7 @@
 
 #define FLAG_TestSpecs_Done 1
 
-#define TIME_RAMP 0.6
+#define TIME_RAMP 0
 
 typedef struct TestSpecs TestSpecs;
 struct TestSpecs
@@ -203,20 +204,59 @@ void Robot::Drive(double forward, double turn)
 
     double target_left_speed = lwheel * VMAX;
     double target_right_speed = rwheel * VMAX;
-
+    //std::cout << target_left_speed << "     " << target_right_speed << std::endl;
     //getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
 
     updateVelocityAndAcceleration(&m_va_left, &m_va_max, target_left_speed, 0.02);
     updateVelocityAndAcceleration(&m_va_right, &m_va_max, target_right_speed, 0.02);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
+    //m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
+    m_moteurDroite.Set(m_kv.getVoltage(2, &m_va_right) / m_moteurDroite.GetBusVoltage());
+    //m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroiteFollower.GetBusVoltage());
+
+    std::cout << forward << "          " << target_left_speed << "          " << m_va_left.m_speed << "   :   " << m_va_left.m_acceleration << "             " << m_kv.getVoltage(0, &m_va_left) << "      :     " << std::endl;
+}
+void Robot::DriveA(double forward, double turn)
+{
+    forward = Deadband(forward, 0.1);
+    turn = Deadband(turn, 0.1);
+    double v = forward * VMAX;
+    double w = turn * WMAX * m_turnAdjustFactor;
+
+    // w = m_drivetrain->CalculateTurn(forward, w);
+
+    double lwheel = v + (w * HALF_TRACKWIDTH);
+    double rwheel = v - (w * HALF_TRACKWIDTH);
+
+    double k;
+    k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
+    lwheel *= k;
+    rwheel *= k;
+
+    m_targetLeftSpeed = lwheel * VMAX;
+    m_targetRightSpeed = rwheel * VMAX;
+}
+void Robot::DriveB()
+{
+    updateVelocityAndAcceleration(&m_va_left, &m_va_max, m_targetLeftSpeed, 0.005);
+    updateVelocityAndAcceleration(&m_va_right, &m_va_max, m_targetRightSpeed, 0.005);
+
+    /*m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
     m_moteurDroite.Set(m_kv.getVoltage(2, &m_va_right) / m_moteurDroite.GetBusVoltage());
-    m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroiteFollower.GetBusVoltage());
+    m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroiteFollower.GetBusVoltage());*/
+
+    m_moteurGauche.SetVoltage(units::volt_t(m_kv.getVoltage(2, &m_va_left)));
+    //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_kv.getVoltage(3, &m_va_left)));
+    m_moteurDroite.SetVoltage(units::volt_t(m_kv.getVoltage(0, &m_va_right)));
+    //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_kv.getVoltage(1, &m_va_right)));
 }
 
 void Robot::RobotInit()
 {
+    m_isLogging = false;
+
     m_moteurDroite.RestoreFactoryDefaults();
     m_moteurGauche.RestoreFactoryDefaults();
     m_moteurDroiteFollower.RestoreFactoryDefaults();
@@ -227,10 +267,10 @@ void Robot::RobotInit()
     m_moteurDroiteFollower.SetOpenLoopRampRate(TIME_RAMP);
     m_moteurGaucheFollower.SetOpenLoopRampRate(TIME_RAMP);
 
-    /*m_moteurDroite.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
+    m_moteurDroite.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
     m_moteurGauche.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
     m_moteurDroiteFollower.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
-    m_moteurGaucheFollower.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);*/
+    m_moteurGaucheFollower.EnableVoltageCompensation(VOLTAGE_COMPENSATION_VALUE);
 
     m_moteurGauche.DisableVoltageCompensation();
     m_moteurGaucheFollower.DisableVoltageCompensation();
@@ -257,8 +297,8 @@ void Robot::RobotInit()
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
 
-    //m_moteurDroiteFollower.Follow(m_moteurDroite);
-    //m_moteurGaucheFollower.Follow(m_moteurGauche);
+    m_moteurDroiteFollower.Follow(m_moteurDroite);
+    m_moteurGaucheFollower.Follow(m_moteurGauche);
 
     m_encodeurExterneDroite.SetDistancePerPulse(1);
     m_encodeurExterneGauche.SetDistancePerPulse(1);
@@ -309,15 +349,56 @@ void Robot::RobotInit()
     //Right 2 Backward
     m_kv.SetMotorCoefficients(3, 1, 2.7967290044994533, 0.38680645837677974, -0.10898343976134406);
 
-    m_va_max.m_speed = 3.5;
-    m_va_max.m_acceleration = 10;
-    m_va_max.m_jerk = 45;
+    m_va_max.m_speed = VMAX;
+    m_va_max.m_acceleration = AMAX;
+    m_va_max.m_jerk = 5;
 
     m_va_left.m_speed = 0;
     m_va_left.m_acceleration = 0;
     m_va_right.m_speed = 0;
     m_va_right.m_acceleration = 0;
+
+    m_moteurDroite.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
+    m_moteurDroite.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
+
+    m_moteurDroiteFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
+    m_moteurDroiteFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
+
+    m_moteurGauche.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
+    m_moteurGauche.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
+
+    m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
+    m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
+
     Robot::AddPeriodic([&]() {
+        DriveB();
+        if (m_isLogging)
+        {
+            m_LogFileDriving->Log(m_targetLeftSpeed,
+                                  m_va_left.m_speed,
+                                  m_encodeurExterneGauche.GetDistance(),
+                                  m_va_left.m_acceleration,
+                                  m_kv.getVoltage(2, &m_va_left),
+                                  m_moteurGauche.GetBusVoltage() * m_moteurGauche.GetAppliedOutput(),
+                                  m_moteurGaucheFollower.GetBusVoltage() * m_moteurGaucheFollower.GetAppliedOutput(),
+                                  m_moteurDroite.GetBusVoltage() * m_moteurDroite.GetAppliedOutput(),
+                                  m_moteurDroiteFollower.GetBusVoltage() * m_moteurDroiteFollower.GetAppliedOutput(),
+                                  m_pdp.GetCurrent(0),
+                                  m_pdp.GetCurrent(1),
+                                  m_pdp.GetCurrent(14),
+                                  m_pdp.GetCurrent(15),
+                                  m_moteurDroite.GetOutputCurrent(),
+                                  m_moteurDroiteFollower.GetOutputCurrent(),
+                                  m_moteurGauche.GetOutputCurrent(),
+                                  m_moteurGaucheFollower.GetOutputCurrent(),
+                                  m_moteurDroite.GetFaults(),
+                                  m_moteurDroiteFollower.GetFaults(),
+                                  m_moteurGauche.GetFaults(),
+                                  m_moteurGaucheFollower.GetFaults());
+        }
+    },
+                       5_ms, 5_ms);
+    /*Robot::AddPeriodic([&]() {
         switch (m_logState)
         {
         case 1:
@@ -371,7 +452,7 @@ void Robot::RobotInit()
             break;
         }
     },
-                       1_ms, 4_ms);
+                       1_ms, 4_ms);*/
 }
 
 void Robot::AutonomousInit() {}
@@ -384,6 +465,8 @@ void Robot::TeleopInit()
 
     //m_imu.ConfigCalTime(frc::ADIS16470CalibrationTime::_4s);
     //m_imu.Calibrate();
+    m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "target", "speed", "tureSpeed", "acceleration", "voltageTheoric", " trueVoltageG1 ", "trueVoltageG2", "trueVoltageR1", "trueVoltageR2", "pdp0", "pdp1", "pdp14", "pdp15", "A1", "A2", "A3", "A4", "erreur1", "erreur2", "erreur3", "erreur4");
+    m_isLogging = true;
 
     m_encodeurExterneDroite.Reset();
     m_encodeurExterneGauche.Reset();
@@ -405,7 +488,9 @@ void Robot::TeleopPeriodic()
 #if XBOX_CONTROLLER
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
+    m_va_max.m_acceleration = m_PowerEntry.GetDouble(0.0f);
+    DriveA(-m_leftHandController.GetY(), m_rightHandController.GetZ());
+    std::cout << m_encodeurExterneGauche.GetDistance() << std::endl;
 #endif
 
     /*if (m_driverController.GetAButton())
