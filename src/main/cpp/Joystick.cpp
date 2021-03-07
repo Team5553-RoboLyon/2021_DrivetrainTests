@@ -38,13 +38,25 @@
 
 #define TIME_RAMP 0.6
 
+#define EPSILON 0.0000001
+
 // Differential Steering Joystick Algorithm
 // ========================================
 // Converts a single dual-axis joystick into a differential
 // drive motor control, with support for both drive, turn
 // and pivot operations.
 //
-
+double getSign(double number)
+{
+    if (number < 0)
+    {
+        return -1;
+    }
+    else
+    {
+        return 1;
+    }
+}
 void getSpeedsAndAccelerations(VA *pva_left, VA *pva_right, const VA *pvamax, const double jx, const double jy)
 {
     double premix_left;  //    (left) premixed output(-1.. + 1)
@@ -167,39 +179,102 @@ void getSpeedsAndAccelerationsNew(VA *pva_left, VA *pva_right, const VA *pva_max
 
 void updateVelocityAndAcceleration(VA *pva, const VA *pva_max, const double target_speed, const double dt)
 {
-    double acc;
-    double v_diff;
+    double dv0v1 = target_speed - pva->m_speed;
+    double dv_a = getSign(pva->m_acceleration) * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk);
+    double d_v = dv0v1 - dv_a;
 
-    acc = pva_max->m_acceleration * dt;
-    v_diff = target_speed - pva->m_speed;
-
-    if (v_diff < 0)
+    if (d_v < 0)
     {
-        if (v_diff < -3.0f * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        if (pva->m_acceleration <= -pva_max->m_acceleration)
         {
-            pva->m_acceleration -= pva_max->m_jerk * dt;
-            if (pva->m_acceleration < -pva_max->m_acceleration)
-            {
-                pva->m_acceleration = -pva_max->m_acceleration;
-            }
+            pva->m_jerk = 0.0;
+        }
+        else
+        {
+            pva->m_jerk = -pva_max->m_jerk;
         }
     }
-    else if (v_diff > 0)
+    else if (d_v > 0)
     {
-        if (v_diff > 3.0f * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        if (pva->m_acceleration >= pva_max->m_acceleration)
         {
-            pva->m_acceleration += pva_max->m_jerk * dt;
-            if (pva->m_acceleration > pva_max->m_acceleration)
-            {
-                pva->m_acceleration = pva_max->m_acceleration;
-            }
+            pva->m_jerk = 0.0;
+        }
+        else
+        {
+            pva->m_jerk = pva_max->m_jerk;
         }
     }
     else
     {
-        std::cout << pva->m_acceleration << "    alors qu'elle devrait être nulle" << std::endl;
+        pva->m_jerk = 0.0f;
+    }
+
+    double a = pva->m_acceleration + pva->m_jerk * dt;
+
+    if (a > pva_max->m_acceleration)
+    {
+        a = pva_max->m_acceleration;
+    }
+    else if (a < -pva_max->m_acceleration)
+    {
+        a = -pva_max->m_acceleration;
+    }
+
+    double t = abs(a - pva->m_acceleration) / pva_max->m_jerk;
+
+    double da = pva->m_acceleration * t + 0.5 * t * t * pva->m_jerk + a * (dt - t);
+    if (getSign(dv0v1) != getSign(dv0v1 - da))
+    {
+        pva->m_acceleration = 0.0;
+        pva->m_jerk = 0.0;
+        pva->m_speed = target_speed;
+    }
+    else
+    {
+        pva->m_speed += da;
+        pva->m_acceleration = a;
+    }
+    //std::cout << pva->m_speed << std::endl;
+    /*
+    if (dv0v1 < 0)
+    {
+        if (dv0v1 < getSign(pva->m_acceleration) * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        {
+            pva->m_acceleration -= pva_max->m_jerk * dt;
+            if (pva->m_acceleration < -pva_max->m_acceleration)
+            {
+                std::cout << "dommage" << std::endl;
+                pva->m_acceleration = -pva_max->m_acceleration;
+            }
+        }
+        else
+        {
+            pva->m_acceleration += pva_max->m_jerk * dt;
+        }
+    }
+    else if (dv0v1 > 0)
+    {
+        if (dv0v1 > getSign(pva->m_acceleration) * pva->m_acceleration * pva->m_acceleration / (2.0f * pva_max->m_jerk))
+        {
+            pva->m_acceleration += pva_max->m_jerk * dt;
+            if (pva->m_acceleration > pva_max->m_acceleration)
+            {
+                std::cout << "banane" << std::endl;
+                pva->m_acceleration = pva_max->m_acceleration;
+            }
+        }
+        else
+        {
+            pva->m_acceleration -= pva_max->m_jerk * dt;
+        }
+    }
+    else
+    {
+        //std::cout << pva->m_acceleration << "    alors qu'elle devrait être nulle" << std::endl;
         return;
     }
 
     pva->m_speed += pva->m_acceleration * dt;
+    std::cout << pva->m_acceleration << "     " << pva->m_speed << "     " << target_speed << "     " << dv0v1 << std::endl;*/
 }
