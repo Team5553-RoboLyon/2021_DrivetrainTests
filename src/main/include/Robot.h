@@ -58,8 +58,8 @@ private:
   rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurGaucheFollower{3, rev::CANSparkMax::MotorType::kBrushless};
 
-  frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
-  frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneDroite{0, 1, false, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneGauche{2, 3, true, frc::Encoder::k4X};
 
 #if IMU
   frc::ADIS16470_IMU m_imu{};
@@ -110,12 +110,12 @@ private:
   */
 
   void LogData();
+  double m_turnAdjustFactor = 1;
 
 #if XBOX_CONTROLLER
   frc::XboxController m_driverController{0};
 #else
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
-  double m_turnAdjustFactor = 0.6;
 #endif
 };

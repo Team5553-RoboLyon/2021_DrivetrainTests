@@ -1,2 +1,2 @@
-#define XBOX_CONTROLLER false
+#define XBOX_CONTROLLER true
 #define IMU false

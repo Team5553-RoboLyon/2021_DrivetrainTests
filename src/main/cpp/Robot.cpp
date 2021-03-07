@@ -43,7 +43,7 @@
 
 #define FLAG_TestSpecs_Done 1
 
-#define TIME_RAMP 0.6
+#define TIME_RAMP 0.4
 
 typedef struct TestSpecs TestSpecs;
 struct TestSpecs
@@ -293,21 +293,21 @@ void Robot::RobotInit()
     //m_solenoidDoigt.Set(frc::DoubleSolenoid::Value::kForward);
 
     //Left 1 Forward
-    m_kv.SetMotorCoefficients(0, 0, 2.815697532731544, 0.4694670372587819, 0.11096684006625335);
+    m_kv.SetMotorCoefficients(0, 0, 3.152155758951382, 0.5846560513692277, 0.16874033425660784);
     //Left 2 Forward
-    m_kv.SetMotorCoefficients(1, 0, 2.8171477288641165, 0.478564016576128, 0.10975114086308402);
+    m_kv.SetMotorCoefficients(1, 0, 3.153964152576119, 0.5723628160446611, 0.16744753306274163);
     //Right 1 Forward
-    m_kv.SetMotorCoefficients(2, 0, 2.8024631236903135, 0.4403635472698452, 0.10741975250277491);
+    m_kv.SetMotorCoefficients(2, 0, 3.0595817465468746, 0.5274566943213479, 0.17244602277001775);
     //Right 2 Forward
-    m_kv.SetMotorCoefficients(3, 0, 2.801981945589249, 0.43687098372033967, 0.10747542821680156);
+    m_kv.SetMotorCoefficients(3, 0, 3.0586967840650097, 0.5554384750908242, 0.17311052718403896);
     //Left 1 Backward
-    m_kv.SetMotorCoefficients(0, 1, 2.8526153046254596, 0.4060315027282673, -0.08529919470860658);
+    m_kv.SetMotorCoefficients(0, 1, 3.118440174563925, 0.5829291200314344, -0.16580957666566665);
     //Left 2 Backward
-    m_kv.SetMotorCoefficients(1, 1, 2.853672567242419, 0.40031111541410647, -0.08431872256237849);
+    m_kv.SetMotorCoefficients(1, 1, 3.118960183596434, 0.5542235558754568, -0.16548790978136374);
     //Right 1 Backward
-    m_kv.SetMotorCoefficients(2, 1, 2.7974216902473548, 0.38833514223084226, -0.10863199131460277);
+    m_kv.SetMotorCoefficients(2, 1, 3.1011616001787696, 0.4443591530083219, -0.16510492228166562);
     //Right 2 Backward
-    m_kv.SetMotorCoefficients(3, 1, 2.7967290044994533, 0.38680645837677974, -0.10898343976134406);
+    m_kv.SetMotorCoefficients(3, 1, 3.0998353792893143, 0.4589298941678074, -0.16643629483787947);
 
     m_va_max.m_speed = 3.5;
     m_va_max.m_acceleration = 10;
@@ -317,7 +317,7 @@ void Robot::RobotInit()
     m_va_left.m_acceleration = 0;
     m_va_right.m_speed = 0;
     m_va_right.m_acceleration = 0;
-    Robot::AddPeriodic([&]() {
+    /*Robot::AddPeriodic([&]() {
         switch (m_logState)
         {
         case 1:
@@ -371,7 +371,7 @@ void Robot::RobotInit()
             break;
         }
     },
-                       1_ms, 4_ms);
+                       1_ms, 4_ms);*/
 }
 
 void Robot::AutonomousInit() {}
