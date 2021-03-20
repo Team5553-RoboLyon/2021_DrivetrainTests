@@ -22,12 +22,16 @@
 #include <networktables/NetworkTableEntry.h>
 #include "lib/CSVLogFile.h"
 #include "lib/CustomMaths.h"
+#include "lib/NL/NLPid.h"
+#include "lib/NL/Characterization/NLMotorCharacterization.h"
 #include "Joystick.h"
 #if IMU
 #include <adi/ADIS16470_IMU.h>
 #endif
 #include <frc/LinearFilter.h>
 #include <frc/PowerDistributionPanel.h>
+
+#include "lib/NL/NLTrajectoryStateSPack.h"
 
 class Robot : public frc::TimedRobot
 {
@@ -49,6 +53,24 @@ public:
   void DriveB();
 
 private:
+
+	NLPID				    m_pid;
+	NLPID_ERROR			m_errorLeft;
+	NLPID_ERROR			m_errorRight;
+
+  Nf32  m_leftErrorVoltage;
+  Nf32  m_rightErrorVoltage;
+  Nf32  m_refLeftS; 
+  Nf32  m_refRightS;
+  Nf32  m_prevS;
+  Nf32  m_prevK;
+  Nf32  m_estimatedAngle;
+  Nf32  m_dsLeftWheel;
+  Nf32  m_dsRightWheel;
+  NLTRAJECTORY_STATE_S_PACK m_trajectoryStatesPack;
+  NLTRAJECTORY_STATE_S      m_currrentSState;
+  NLMOTOR_CHARACTERIZATION  m_motorCharacterization[4];//droite: 0,1 gauche: 2,3
+
   double m_targetLeftSpeed;
   double m_targetRightSpeed;
   VA m_va_left;
@@ -65,8 +87,8 @@ private:
 
   frc::PowerDistributionPanel m_pdp;
 
-  frc::Encoder m_encodeurExterneDroite{0, 1, false, frc::Encoder::k4X};
-  frc::Encoder m_encodeurExterneGauche{2, 3, true, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
 
 #if IMU
   frc::ADIS16470_IMU m_imu{};
@@ -101,6 +123,7 @@ private:
   bool shooterOn = false;
   bool m_override = false;
   bool m_isLogging = false;
+  bool m_isPathFollowing = false;
   double m_ramp = 0;
   double m_time0;
 

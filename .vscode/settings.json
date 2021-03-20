@@ -91,6 +91,7 @@
     "mutex": "cpp",
     "sstream": "cpp",
     "cinttypes": "cpp",
-    "*.inc": "cpp"
+    "*.inc": "cpp",
+    "math": "cpp"
   }
 }

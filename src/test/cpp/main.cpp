@@ -1,3 +1,4 @@
+#define _NWINDOWS
 #include <hal/HAL.h>
 
 #include "gtest/gtest.h"

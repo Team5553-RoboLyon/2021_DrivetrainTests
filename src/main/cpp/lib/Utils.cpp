@@ -11,7 +11,7 @@ void KineticToVoltage::SetMotorCoefficients(uint motorID, uint isBackward, doubl
 double KineticToVoltage::getVoltage(uint motorID, const VA *pva)
 {
     int isBackward = (pva->m_speed < 0) ? 1 : 0;
-    if (-0.01 < pva->m_speed && pva->m_speed < 0.01)
+    if (-0.05 < pva->m_speed && pva->m_speed < 0.05)
     {
         return 0;
     }
