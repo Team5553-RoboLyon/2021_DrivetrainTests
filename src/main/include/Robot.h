@@ -24,6 +24,7 @@
 #include "lib/CustomMaths.h"
 #include "lib/NL/NLPid.h"
 #include "lib/NL/Characterization/NLMotorCharacterization.h"
+#include "lib/NL/Characterization/NLCharacterization_Tests.h"
 #include "Joystick.h"
 #if IMU
 #include <adi/ADIS16470_IMU.h>
@@ -32,6 +33,29 @@
 #include <frc/PowerDistributionPanel.h>
 
 #include "lib/NL/NLTrajectoryStateSPack.h"
+
+#define TRACKWIDTH 0.61f
+#define HALF_TRACKWIDTH (TRACKWIDTH / 2.0f)
+
+#define AMAX 7   // Acceleration Max  au PIF .. à définir aux encodeurs
+#define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
+#define JMAX 45
+#define WMAX ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
+#define PATHNAME "0_8Great2UJ30A1_5V1"
+
+#define VOLTAGE_COMPENSATION_VALUE 10
+// TEST *********************************************
+#define TEST_LOWVOLTAGE_NB 10    // Nombre de tests ( subdivisions ) sur l'intervalle ]0,TEST_LOWVOLTAGE_MAX] volts						... 10 ou 20 ?
+#define TEST_LOWVOLTAGE_MAX 0.15 // Volts
+
+#define TEST_MEDIUMVOLTAGE_NB 5    // Nombre de tests ( subdivisions ) sur l'intervalle ]TEST_LOWVOLTAGE_MAX,TEST_MEDIUMVOLTAGE_MAX] volts	... 20 ou 25 ?
+#define TEST_MEDIUMVOLTAGE_MAX 1.0 // Volts
+
+#define TEST_HIGHVOLTAGE_NB 44    // Nombre de tests ( subdivisions ) sur l'intervalle ]TEST_MEDIUMVOLTAGE_MAX,TEST_HIGHVOLTAGE_MAX] volts... 12 ou 24 ?
+#define TEST_HIGHVOLTAGE_MAX 12.0 // Volts
+
+#define TIME_RAMP_CHARACTERIZATION 0.6
+#define TIME_RAMP_VOLTAGE_CHARACTERIZATION 8
 
 class Robot : public frc::TimedRobot
 {
@@ -47,29 +71,25 @@ public:
   void TestInit() override;
   void TestPeriodic() override;
 
-  void DriveOld(double forward, double turn);
-  void Drive(double jy, double jx);
-  void DriveA(double forward, double turn);
-  void DriveB();
+  void Drive(double forward, double turn);
 
 private:
+  NLPID m_pid;
+  NLPID_ERROR m_errorLeft;
+  NLPID_ERROR m_errorRight;
 
-	NLPID				    m_pid;
-	NLPID_ERROR			m_errorLeft;
-	NLPID_ERROR			m_errorRight;
-
-  Nf32  m_leftErrorVoltage;
-  Nf32  m_rightErrorVoltage;
-  Nf32  m_refLeftS; 
-  Nf32  m_refRightS;
-  Nf32  m_prevS;
-  Nf32  m_prevK;
-  Nf32  m_estimatedAngle;
-  Nf32  m_dsLeftWheel;
-  Nf32  m_dsRightWheel;
+  Nf32 m_leftErrorVoltage;
+  Nf32 m_rightErrorVoltage;
+  Nf32 m_refLeftS;
+  Nf32 m_refRightS;
+  Nf32 m_prevS;
+  Nf32 m_prevK;
+  Nf32 m_estimatedAngle;
+  Nf32 m_dsLeftWheel;
+  Nf32 m_dsRightWheel;
   NLTRAJECTORY_STATE_S_PACK m_trajectoryStatesPack;
-  NLTRAJECTORY_STATE_S      m_currrentSState;
-  NLMOTOR_CHARACTERIZATION  m_motorCharacterization[4];//droite: 0,1 gauche: 2,3
+  NLTRAJECTORY_STATE_S m_currrentSState;
+  NLMOTOR_CHARACTERIZATION m_motorCharacterization[4]; //droite: 0,1 gauche: 2,3
 
   double m_targetLeftSpeed;
   double m_targetRightSpeed;
@@ -148,4 +168,20 @@ private:
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
 #endif
+
+  NLCharacterization_Tests m_motorCharacterizationTests{
+      &m_moteurGauche,
+      &m_moteurGaucheFollower,
+      &m_moteurDroite,
+      &m_moteurDroiteFollower,
+      &m_encodeurExterneGauche,
+      &m_encodeurExterneDroite,
+      TEST_LOWVOLTAGE_NB,
+      TEST_LOWVOLTAGE_MAX,
+      TEST_MEDIUMVOLTAGE_NB,
+      TEST_MEDIUMVOLTAGE_MAX,
+      TEST_HIGHVOLTAGE_NB,
+      TEST_HIGHVOLTAGE_MAX,
+      TIME_RAMP_CHARACTERIZATION,
+      TIME_RAMP_VOLTAGE_CHARACTERIZATION};
 };
