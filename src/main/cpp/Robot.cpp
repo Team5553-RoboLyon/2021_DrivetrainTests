@@ -63,6 +63,7 @@ void Robot::Drive(double forward, double turn)
 
 void Robot::RobotInit()
 {
+    std::cout << "RobotInit Step 1" << std::endl;
     m_moteurDroite.RestoreFactoryDefaults();
     m_moteurGauche.RestoreFactoryDefaults();
     m_moteurDroiteFollower.RestoreFactoryDefaults();
@@ -93,12 +94,15 @@ void Robot::RobotInit()
     m_moteurGauche.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurDroiteFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
     m_moteurGaucheFollower.SetIdleMode(rev::CANSparkMax::IdleMode::kBrake);
-
+    std::cout << "RobotInit Step 2" << std::endl;
     m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_LogFileName = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #if IMU
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #endif
+    std::cout << "RobotInit Step 3" << std::endl;
     m_encodeurExterneDroite.SetReverseDirection(true);
     m_encodeurExterneGauche.SetReverseDirection(false);
 
@@ -107,6 +111,7 @@ void Robot::RobotInit()
 
     m_encodeurExterneDroite.SetSamplesToAverage(65);
     m_encodeurExterneGauche.SetSamplesToAverage(65);
+    std::cout << "RobotInit Step 4" << std::endl;
 
     m_moteurDroite.SetInverted(false);
     m_moteurDroiteFollower.SetInverted(false);
@@ -134,11 +139,12 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 2);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 2);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus2, 50);
-
+    std::cout << "RobotInit Step 5" << std::endl;
     Robot::AddPeriodic([&]() {
         m_motorCharacterizationTests.fastLoop();
     },
                        2_ms, 1_ms);
+    std::cout << "RobotInit Step 6" << std::endl;
 }
 
 void Robot::AutonomousInit() {}
@@ -174,26 +180,24 @@ void Robot::TeleopInit()
 
 void Robot::TeleopPeriodic()
 {
-    std::cout << "on : " << m_isLogging << std::endl;
+    char infos[256];
+    char desc[256];
 #if IMU
     m_speedY.SetDouble(filterY.Calculate(m_imu.GetAccelInstantY() - init_y));
     m_speedX.SetDouble(filterX.Calculate(m_imu.GetAccelInstantX() - init_x));
 #endif
+    if (m_motorCharacterizationTests.getState() == NLCharacterization_Tests::State::Stopped)
+    {
+        Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+    }
 
-#if XBOX_CONTROLLER
-    Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
-#else
-    m_va_max.m_acceleration = m_PowerEntry.GetDouble(0.0f);
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
-    std::cout << m_encodeurExterneGauche.GetDistance() << std::endl;
-#endif
-
-#if XBOX_CONTROLLER
     if (m_driverController.GetBButtonPressed())
     {
         if (m_motorCharacterizationTests.getState() == NLCharacterization_Tests::State::Stopped)
         {
             m_motorCharacterizationTests.nextTest();
+            sprintf(infos, "%s En Attente ... Appuyer sur A pour Démarrer.", m_motorCharacterizationTests.getCurrentTestDescription(desc, 256));
+            m_customEntry.SetString(infos);
         }
     }
 
@@ -202,6 +206,8 @@ void Robot::TeleopPeriodic()
         if (m_motorCharacterizationTests.getState() == NLCharacterization_Tests::State::Stopped)
         {
             m_motorCharacterizationTests.previousTest();
+            sprintf(infos, "%s En Attente ... Appuyer sur A pour Démarrer.", m_motorCharacterizationTests.getCurrentTestDescription(desc, 256));
+            m_customEntry.SetString(infos);
         }
     }
 
@@ -211,16 +217,18 @@ void Robot::TeleopPeriodic()
         {
             m_motorCharacterizationTests.stop();
             m_motorCharacterizationTests.nextTest();
+            sprintf(infos, "%s En Attente ... Appuyer sur A pour Démarrer.", m_motorCharacterizationTests.getCurrentTestDescription(desc, 256));
+            m_customEntry.SetString(infos);
         }
         else if (m_motorCharacterizationTests.getState() == NLCharacterization_Tests::State::Stopped)
         {
             m_motorCharacterizationTests.start();
+            sprintf(infos, "%s En Cours ... Appuyer sur A pour Arrêter.", m_motorCharacterizationTests.getCurrentTestDescription(desc, 256));
+            m_customEntry.SetString(infos);
         }
     }
-#else
-    m_turnAdjustFactor = (m_rightHandController.GetThrottle() + 1.0) / 2.0;
-    m_customEntry.SetDouble(m_turnAdjustFactor);
-#endif
+
+    //m_LogFileName.SetString(m_motorCharacterizationTests.getCurrentFileLogName(infos, 256));
 }
 
 void Robot::TestInit()

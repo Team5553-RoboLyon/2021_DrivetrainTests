@@ -50,11 +50,16 @@ public:
   ~NLCharacterization_Tests();
   void nextTest();
   void previousTest();
-  void setCurrentTest(uint8_t testNumber);
+  void setCurrentTest(uint8_t testId);
   void start();
   void stop();
   void fastLoop();
   State getState();
+  uint8_t getCurrentTestId();
+  char *getCurrentFileLogName(char *pbuffer, uint size);
+  char *getCurrentTestDescription(char *pmessage, uint size_terminated_null_char_included);
+  uint getTestsCounter();
+  uint areAllTestsDone();
 
 private:
   rev::CANSparkMax *m_rightMotor;
@@ -72,12 +77,7 @@ private:
   uint8_t m_nbTotalTest;
 
   CSVLogFile *m_LogFile;
-  nt::NetworkTableEntry m_LogFileName, m_customEntry;
 
   double m_ramp = 0;
   double m_time0;
-
-  void waitingForTest();
-  void allTestsDone();
-  void testRunning();
 };

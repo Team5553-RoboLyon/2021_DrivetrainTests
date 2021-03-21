@@ -26,34 +26,47 @@ NLCharacterization_Tests::NLCharacterization_Tests(
       m_externalEncoderLeft(externalEncoderLeft),
       m_externalEncoderRight(externalEncoderRight)
 {
-    //---Declare NetworkTables Entries---
-    m_LogFileName = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-    m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-
     //---set all state---
     int i;
-
-    m_nbTotalTest = nbTestLow + nbTestMedium + nbTestHigh;
+    std::cout << "Constructeur démarré" << std::endl;
+    m_nbTotalTest = (nbTestLow + nbTestMedium + nbTestHigh) * 2;
     TestData = (TestSpecs *)malloc(sizeof(TestSpecs) * m_nbTotalTest);
     // Low Voltages
     for (i = 0; i < nbTestLow; i++)
     {
         TestData[i * 2].m_voltage = endVoltageLow * (double)(i + 1) / (double)nbTestLow;
         TestData[i * 2].m_flags = 0;
+        TestData[i * 2].m_ramp = 0;
 
         TestData[i * 2 + 1].m_voltage = -(endVoltageLow * (double)(i + 1) / (double)nbTestLow);
         TestData[i * 2 + 1].m_flags = 0;
+        TestData[i * 2 + 1].m_ramp = 0;
+
+        if (rampVoltage <= TestData[2 * i].m_voltage)
+        {
+            TestData[2 * i].m_ramp = rampValue;
+            TestData[2 * i + 1].m_ramp = rampValue;
+        }
     }
+    std::cout << "Low voltage effectué" << std::endl;
     // Medium Voltages
     for (i = 0; i < nbTestMedium; i++)
     {
         TestData[2 * (nbTestLow + i)].m_voltage = endVoltageLow + (endVoltageMedium - endVoltageLow) * (double)(i + 1) / (double)nbTestMedium;
         TestData[2 * (nbTestLow + i)].m_flags = 0;
+        TestData[2 * (nbTestLow + i)].m_ramp = 0;
 
         TestData[2 * (nbTestLow + i) + 1].m_voltage = -(endVoltageLow + (endVoltageMedium - endVoltageLow) * (double)(i + 1) / (double)nbTestMedium);
         TestData[2 * (nbTestLow + i) + 1].m_flags = 0;
-    }
+        TestData[2 * (nbTestLow + i) + 1].m_ramp = 0;
 
+        if (rampVoltage <= TestData[2 * (nbTestLow + i)].m_voltage)
+        {
+            TestData[2 * (nbTestLow + i)].m_ramp = rampValue;
+            TestData[2 * (nbTestLow + i) + 1].m_ramp = rampValue;
+        }
+    }
+    std::cout << "Medium voltage effectué" << std::endl;
     // High Voltages
     for (i = 0; i < nbTestHigh; i++)
     {
@@ -63,13 +76,15 @@ NLCharacterization_Tests::NLCharacterization_Tests(
 
         TestData[2 * (nbTestLow + nbTestMedium + i) + 1].m_voltage = -(endVoltageMedium + (endVoltageHigh - endVoltageMedium) * (double)(i + 1) / (double)nbTestHigh);
         TestData[2 * (nbTestLow + nbTestMedium + i) + 1].m_flags = 0;
+        TestData[2 * (nbTestLow + nbTestMedium + i) + 1].m_ramp = 0;
 
-        if (rampVoltage >= TestData[2 * (nbTestLow + nbTestMedium + i)].m_voltage)
+        if (rampVoltage <= TestData[2 * (nbTestLow + nbTestMedium + i)].m_voltage)
         {
             TestData[2 * (nbTestLow + nbTestMedium + i)].m_ramp = rampValue;
             TestData[2 * (nbTestLow + nbTestMedium + i) + 1].m_ramp = rampValue;
         }
     }
+    std::cout << "High voltage effectué" << std::endl;
 }
 
 NLCharacterization_Tests::~NLCharacterization_Tests()
@@ -79,32 +94,42 @@ NLCharacterization_Tests::~NLCharacterization_Tests()
 
 void NLCharacterization_Tests::nextTest()
 {
-    assert(m_state == State::Stopped);
-    assert(m_CurrentTestID <= m_nbTotalTest);
-    m_CurrentTestID++;
+    assert((m_state == State::Stopped) || (m_state == State::AskForStop));
+    if (m_CurrentTestID < (m_nbTotalTest - 1))
+    {
+        m_CurrentTestID++;
+    }
 }
 void NLCharacterization_Tests::previousTest()
 {
-    assert(m_state == State::Stopped);
-    assert(m_CurrentTestID <= m_nbTotalTest);
-    m_CurrentTestID--;
+    assert((m_state == State::Stopped) || (m_state == State::AskForStop));
+    if (m_CurrentTestID > 0)
+    {
+        m_CurrentTestID--;
+    }
 }
-void NLCharacterization_Tests::setCurrentTest(uint8_t testNumber)
+void NLCharacterization_Tests::setCurrentTest(uint8_t testId)
 {
     assert(m_state == State::Stopped);
-    m_CurrentTestID = testNumber;
+    assert((testId > 0) && (testId < (m_nbTotalTest - 1)));
+    m_CurrentTestID = testId;
 }
 
 void NLCharacterization_Tests::start()
 {
     assert(m_state == State::Stopped);
     assert(m_CurrentTestID <= m_nbTotalTest);
+
     //setting ramp
     m_oldRamp = m_rightMotor->GetOpenLoopRampRate();
+
     m_rightMotor->SetOpenLoopRampRate(TestData[m_CurrentTestID].m_ramp);
     m_rightMotorFollower->SetOpenLoopRampRate(TestData[m_CurrentTestID].m_ramp);
     m_leftMotor->SetOpenLoopRampRate(TestData[m_CurrentTestID].m_ramp);
     m_leftMotorFollower->SetOpenLoopRampRate(TestData[m_CurrentTestID].m_ramp);
+
+    m_externalEncoderLeft->Reset();
+    m_externalEncoderRight->Reset();
 
     //set state of test
     m_state = State::AskForStart;
@@ -112,6 +137,7 @@ void NLCharacterization_Tests::start()
 void NLCharacterization_Tests::stop()
 {
     assert(m_state == State::Started);
+
     //setting ramp
     m_rightMotor->SetOpenLoopRampRate(m_oldRamp);
     m_rightMotorFollower->SetOpenLoopRampRate(m_oldRamp);
@@ -126,13 +152,74 @@ NLCharacterization_Tests::State NLCharacterization_Tests::getState()
 {
     return m_state;
 }
+
+uint8_t NLCharacterization_Tests::getCurrentTestId()
+{
+    return m_CurrentTestID;
+}
+
+char *NLCharacterization_Tests::getCurrentTestDescription(char *pmessage, uint size_terminated_null_char_included)
+{
+    char desc[256];
+    sprintf(desc, "TEST %d / %d [ %.2f Volts || Rampe : %.2f ]", m_CurrentTestID + 1, m_nbTotalTest, TestData[m_CurrentTestID].m_voltage, TestData[m_CurrentTestID].m_ramp);
+    uint sizetocopy = (NMIN(size_terminated_null_char_included, 256) - 1);
+    strncpy(pmessage, desc, sizetocopy);
+    pmessage[sizetocopy + 1] = 0;
+    return pmessage;
+}
+
+uint NLCharacterization_Tests::getTestsCounter()
+{
+    uint counter = 0;
+    for (uint i = 0; i < m_nbTotalTest; i++)
+    {
+        if (BITGET(TestData[i].m_flags, 0))
+        {
+            counter++;
+        }
+    }
+    return counter;
+}
+
+uint NLCharacterization_Tests::areAllTestsDone()
+{
+    uint counter = 0;
+    for (uint i = 0; i < m_nbTotalTest; i++)
+    {
+        if (BITGET(TestData[i].m_flags, 0))
+        {
+            counter++;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return (counter == m_nbTotalTest) ? 1 : 0;
+}
+
+char *NLCharacterization_Tests::getCurrentFileLogName(char *pbuffer, uint size_terminated_null_char_included)
+{
+    if (m_LogFile)
+    {
+        uint sizecopied = m_LogFile->GetFileName().copy(pbuffer, size_terminated_null_char_included - 1);
+        pbuffer[sizecopied] = 0;
+    }
+    else
+    {
+        uint sizetocopy = NMIN(14, size_terminated_null_char_included - 1);
+        strncpy(pbuffer, "No file opened", sizetocopy);
+        pbuffer[sizetocopy] = 0;
+    }
+    return pbuffer;
+}
 void NLCharacterization_Tests::fastLoop()
 {
     switch (m_state)
     {
-    case State::Stopped:
+        /*case State::Stopped:
         //Do nothing
-        break;
+        break;*/
 
     case State::AskForStart:
         char prefix[512];
@@ -149,9 +236,7 @@ void NLCharacterization_Tests::fastLoop()
         }
 
         m_LogFile = new CSVLogFile(prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
-        m_LogFileName.SetString(m_LogFile->GetFileName());
 
-        testRunning();
         BITSET(TestData[m_CurrentTestID].m_flags, 0);
         m_time0 = std::time(0);
 
@@ -208,6 +293,7 @@ void NLCharacterization_Tests::fastLoop()
         m_rightMotor->StopMotor();
         m_rightMotorFollower->StopMotor();
         delete m_LogFile;
+        m_LogFile = nullptr;
         m_state = State::Stopped;
         break;
 
@@ -215,31 +301,4 @@ void NLCharacterization_Tests::fastLoop()
         //Do nothing
         break;
     }
-}
-
-void NLCharacterization_Tests::waitingForTest()
-{
-    char txt[256];
-    if (!BITGET(TestData[m_CurrentTestID].m_flags, 0))
-    {
-        sprintf(txt, "TEST %d / %d [ %.2f Volts || Rampe : %.2f ]. En Attente ... Appuyer sur A pour Démarrer.", m_CurrentTestID, m_nbTotalTest * 2, TestData[m_CurrentTestID].m_voltage, TestData[m_CurrentTestID].m_ramp);
-        m_customEntry.SetString(txt);
-    }
-    else
-    {
-        sprintf(txt, "TEST %d / %d [ %.2f Volts || Rampe : %.2f ]. DEJA EFFECTUE ! ... Appuyer sur A pour Démarrer à nouveau.( Le précédent LOGFILE sera conservé.)", m_CurrentTestID, m_nbTotalTest, TestData[m_CurrentTestID].m_voltage, TestData[m_CurrentTestID].m_ramp);
-        m_customEntry.SetString(txt);
-    }
-}
-void NLCharacterization_Tests::allTestsDone()
-{
-    char txt[256];
-    sprintf(txt, "%d / %d  TESTS EFFECTUES ! ", m_nbTotalTest * 2, m_nbTotalTest * 2);
-    m_customEntry.SetString(txt);
-}
-void NLCharacterization_Tests::testRunning()
-{
-    char txt[256];
-    sprintf(txt, "TEST %d / %d [ %.2f Volts || Rampe : %.2f ]. En cours ... Appuyer à nouveau sur A pour arrêter.", m_CurrentTestID, m_nbTotalTest * 2, TestData[m_CurrentTestID].m_voltage, TestData[m_CurrentTestID].m_ramp);
-    m_customEntry.SetString(txt);
 }
