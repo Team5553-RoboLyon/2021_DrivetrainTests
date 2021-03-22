@@ -148,6 +148,7 @@ void NLCharacterization_Tests::stop()
     m_state = State::AskForStop;
 }
 
+// waouh
 NLCharacterization_Tests::State NLCharacterization_Tests::getState()
 {
     return m_state;
