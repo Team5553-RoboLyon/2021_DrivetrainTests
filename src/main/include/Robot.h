@@ -21,6 +21,7 @@
 #include <frc/VictorSP.h>
 #include <networktables/NetworkTableEntry.h>
 #include "lib/CSVLogFile.h"
+#include "lib/newCSVLogFile.h"
 #include "lib/CustomMaths.h"
 #include "lib/NL/NLPid.h"
 #include "lib/NL/Characterization/NLMotorCharacterization.h"
@@ -31,6 +32,8 @@
 #endif
 #include <frc/LinearFilter.h>
 #include <frc/PowerDistributionPanel.h>
+
+#include "lib/newCSVLogFile.h"
 
 #include "lib/NL/NLTrajectoryStateSPack.h"
 
