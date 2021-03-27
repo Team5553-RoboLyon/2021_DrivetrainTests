@@ -21,6 +21,10 @@
 #include <frc/PWMSparkMax.h>
 #include <frc/VictorSP.h>
 #include <networktables/NetworkTableEntry.h>
+<<<<<<< HEAD
+=======
+#include "lib/CSVLogFile.h"
+>>>>>>> parent of 45ea601 (double loging are ok)
 #include "lib/CustomMaths.h"
 #include "lib/NL/NLPid.h"
 #include "lib/NL/Characterization/NLMotorCharacterization.h"
