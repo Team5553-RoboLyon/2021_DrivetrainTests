@@ -80,15 +80,15 @@ private:
 
   CSVLogFile *m_LogFile, *m_LogFileDriving;
   nt::NetworkTableEntry m_LogFilename, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX, m_customEntry;
-  rev::CANSparkMax m_moteurDroite{1, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANSparkMax m_moteurGauche{2, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANSparkMax m_moteurGaucheFollower{3, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANSparkMax m_moteurGauche{1, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANSparkMax m_moteurGaucheFollower{4, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANSparkMax m_moteurDroite{2, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANSparkMax m_moteurDroiteFollower{3, rev::CANSparkMax::MotorType::kBrushless};
 
   frc::PowerDistributionPanel m_pdp;
 
-  frc::Encoder m_encodeurExterneDroite{2, 3, false, frc::Encoder::k4X};
-  frc::Encoder m_encodeurExterneGauche{0, 1, true, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneGauche{0, 1, false, frc::Encoder::k4X};
+  frc::Encoder m_encodeurExterneDroite{2, 3, true, frc::Encoder::k4X};
 
 #if IMU
   frc::ADIS16470_IMU m_imu{};

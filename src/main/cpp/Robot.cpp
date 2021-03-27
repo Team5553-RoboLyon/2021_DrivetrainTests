@@ -306,8 +306,8 @@ void Robot::RobotInit()
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
 
-    //m_moteurDroiteFollower.Follow(m_moteurDroite);
-    //m_moteurGaucheFollower.Follow(m_moteurGauche);
+    m_moteurDroiteFollower.Follow(m_moteurDroite);
+    m_moteurGaucheFollower.Follow(m_moteurGauche);
     m_encodeurExterneDroite.SetReverseDirection(true);
     m_encodeurExterneGauche.SetReverseDirection(false);
 
@@ -471,9 +471,9 @@ void Robot::RobotInit()
                 //std::cout << " MG: " << m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage << std::endl;
                 //std::cout << " MD: " << m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage << std::endl;
                 m_moteurGauche.SetVoltage(units::volt_t(m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
-                m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
+                //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
                 m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
-                m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
+                //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
                 m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a, m_currrentSState.m_kin.m_a, m_leftErrorVoltage, m_rightErrorVoltage);
             }
             else
@@ -487,9 +487,9 @@ void Robot::RobotInit()
                 //std::cout << " PID: " << m_pid.m_kP << " " << m_pid.m_kI << " " << m_pid.m_kD << std::endl;
 
                 m_moteurGauche.SetVoltage(units::volt_t(m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
-                m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
+                //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
                 m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
-                m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
+                //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
                 m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * left, m_currrentSState.m_kin.m_a * right, m_leftErrorVoltage, m_rightErrorVoltage);
             }
         }
@@ -522,7 +522,7 @@ void Robot::RobotInit()
                                   m_moteurGaucheFollower.GetFaults());*/
         }
     },
-                       5_ms, 5_ms);
+                       5_ms, 2_ms);
 
     // TRAJECTORY
     wpi::SmallString<64> deployDirectory;
@@ -542,7 +542,7 @@ void Robot::RobotInit()
     fclose(pfile);
     std::cout << "file close" << std::endl;
 
-    m_pid.m_kP = 60.0f;
+    m_pid.m_kP = 40.0f;
     m_pid.m_kI = 0.0f;
     m_pid.m_kD = 0.0f;
     /*
@@ -563,7 +563,7 @@ else
 }
  */
 
-    m_motorCharacterization[0].setForwardConst(3.1326206010537563, 0.5677475451077377, 0.13130778674420807);
+    /*m_motorCharacterization[0].setForwardConst(3.1326206010537563, 0.5677475451077377, 0.13130778674420807);
     m_motorCharacterization[1].setForwardConst(3.1235193481564174, 0.5556044575328529, 0.14299467623195827);
     m_motorCharacterization[2].setForwardConst(3.098541009252153, 0.3552462306731122, 0.1591323786822345);
     m_motorCharacterization[3].setForwardConst(3.097982066096822, 0.3571148418248107, 0.16019545143144676);
@@ -571,7 +571,17 @@ else
     m_motorCharacterization[0].setBackwardConst(3.161121333666647, 0.5486387690059814, -0.13693734149024817);
     m_motorCharacterization[1].setBackwardConst(3.151959813222301, 0.5385715415354247, -0.14931540125265652);
     m_motorCharacterization[2].setBackwardConst(3.0649666485836486, 0.4261078385729976, -0.15383003389418626);
-    m_motorCharacterization[3].setBackwardConst(3.064038233186117, 0.4359525131849489, -0.15504809860349766);
+    m_motorCharacterization[3].setBackwardConst(3.064038233186117, 0.4359525131849489, -0.15504809860349766);*/
+
+    m_motorCharacterization[2].setBackwardConst(2.9439645274801745, 0.497844394061329, 0.17669685143839597);
+    m_motorCharacterization[3].setBackwardConst(2.950356803117724, 0.5041727391828145, 0.17573951540435395);
+    m_motorCharacterization[0].setBackwardConst(2.9645542273154413, 0.5336905255210657, 0.15980680633366884);
+    m_motorCharacterization[1].setBackwardConst(2.958265277821511, 0.5191725612092802, 0.16290622468954563);
+
+    m_motorCharacterization[2].setForwardConst(2.9093149260814197, 0.5021941832368491, -0.18060265308339307);
+    m_motorCharacterization[3].setForwardConst(2.9153212559880473, 0.5063832718700757, -0.17972296712684788);
+    m_motorCharacterization[0].setForwardConst(2.989412988602101, 0.5208661112112254, -0.18006036470931175);
+    m_motorCharacterization[1].setForwardConst(2.9882526065678867, 0.5155155049327158, -0.1794557484560393);
 }
 
 void Robot::AutonomousInit() {}
