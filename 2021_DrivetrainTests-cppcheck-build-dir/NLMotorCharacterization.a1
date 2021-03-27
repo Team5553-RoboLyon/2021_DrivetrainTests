@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<analyzerinfo checksum="1816058428">
-  <FileInfo check="CheckUnusedFunctions">
-    <functioncall functionName="m_backwardIntercept"/>
-    <functioncall functionName="m_forwardIntercept"/>
-  </FileInfo>
-</analyzerinfo>

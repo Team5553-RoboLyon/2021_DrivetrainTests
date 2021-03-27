@@ -6,16 +6,13 @@
 #include <rev/CANSparkMax.h>
 #include <frc/Encoder.h>
 #include <assert.h>
+#include "lib/CSVLogFile.h"
 #include "lib/N/NMath.h"
 #include "lib/N/NType.h"
 #include "lib/N/NFlags.h"
 #include <networktables/NetworkTableEntry.h>
 #include <frc/shuffleboard/Shuffleboard.h>
 #include <units/units.h>
-#include <stdio.h>
-
-#define NB_MOTOR 4
-#define NB_ENCODER 2
 
 typedef struct TestSpecs TestSpecs;
 struct TestSpecs
@@ -23,20 +20,6 @@ struct TestSpecs
   unsigned long m_flags;
   double m_voltage;
   double m_ramp;
-};
-
-typedef struct NL_ENCODER_LOGDATA NL_ENCODER_LOGDATA;
-struct NL_ENCODER_LOGDATA
-{
-  frc::Encoder *m_pEncoder;
-  char name[16]; //NULL character included
-};
-
-typedef struct NL_CANSPARK_LOGDATA NL_CANSPARK_LOGDATA;
-struct NL_CANSPARK_LOGDATA
-{
-  rev::CANSparkMax *m_pCanSparkMax;
-  char name[16]; //NULL character included
 };
 
 class NLCharacterization_Tests
@@ -73,6 +56,7 @@ public:
   void fastLoop();
   State getState();
   uint8_t getCurrentTestId();
+  char *getCurrentFileLogName(char *pbuffer, uint size);
   char *getCurrentTestDescription(char *pmessage, uint size_terminated_null_char_included);
   uint getTestsCounter();
   uint areAllTestsDone();
@@ -86,23 +70,13 @@ private:
   frc::Encoder *m_externalEncoderRight;
   frc::Encoder *m_externalEncoderLeft;
 
-  NL_ENCODER_LOGDATA m_encoderLogData[2] = {
-      {m_externalEncoderRight, "encoderGetR"},
-      {m_externalEncoderLeft, "encoderGetL"}};
-
-  NL_CANSPARK_LOGDATA m_cansparkLogData[4]{
-      {m_rightMotor, "rightMotor"},
-      {m_rightMotorFollower, "rightFollower"},
-      {m_leftMotor, "leftMotor"},
-      {m_leftMotorFollower, "leftFollower"}};
-
   TestSpecs *TestData;
   State m_state = State::Stopped;
   uint8_t m_CurrentTestID = 0;
   double m_oldRamp;
   uint8_t m_nbTotalTest;
 
-  FILE *m_LogFile;
+  CSVLogFile *m_LogFile;
 
   double m_ramp = 0;
   double m_time0;

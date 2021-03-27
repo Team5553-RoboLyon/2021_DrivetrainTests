@@ -148,6 +148,7 @@ void NLCharacterization_Tests::stop()
     m_state = State::AskForStop;
 }
 
+
 NLCharacterization_Tests::State NLCharacterization_Tests::getState()
 {
     return m_state;
@@ -197,6 +198,22 @@ uint NLCharacterization_Tests::areAllTestsDone()
     }
     return (counter == m_nbTotalTest) ? 1 : 0;
 }
+
+char *NLCharacterization_Tests::getCurrentFileLogName(char *pbuffer, uint size_terminated_null_char_included)
+{
+    if (m_LogFile)
+    {
+        uint sizecopied = m_LogFile->GetFileName().copy(pbuffer, size_terminated_null_char_included - 1);
+        pbuffer[sizecopied] = 0;
+    }
+    else
+    {
+        uint sizetocopy = NMIN(14, size_terminated_null_char_included - 1);
+        strncpy(pbuffer, "No file opened", sizetocopy);
+        pbuffer[sizetocopy] = 0;
+    }
+    return pbuffer;
+}
 void NLCharacterization_Tests::fastLoop()
 {
     switch (m_state)
@@ -219,18 +236,7 @@ void NLCharacterization_Tests::fastLoop()
             sprintf(prefix, "/home/lvuser/logs/+_%s_%d_%.2fvolts_", invertedPrefix, m_CurrentTestID, TestData[m_CurrentTestID].m_voltage);
         }
 
-        m_LogFile = fopen(prefix, "w+");
-        char headingString[256];
-        for (int i = 0; i < sizeof(m_cansparkLogData) / sizeof(*m_cansparkLogData); i++)
-        {
-            sprintf(headingString, "%s, %sBusVoltage, %sAppliedOutput, %sOutputCurrent", headingString, m_cansparkLogData[i], m_cansparkLogData[i], m_cansparkLogData[i]);
-        }
-        for (int i = 0; i < sizeof(m_encoderLogData) / sizeof(*m_encoderLogData); i++)
-        {
-            sprintf(headingString, "%s, %sGet, %sGetRaw", headingString, m_encoderLogData[i], m_encoderLogData[i]);
-        }
-        sprintf(headingString, "%s, voltage, ramp", headingString);
-        fprintf(m_LogFile, "% \n", headingString);
+        m_LogFile = new CSVLogFile(prefix, "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
 
         BITSET(TestData[m_CurrentTestID].m_flags, 0);
         m_time0 = std::time(0);
@@ -262,20 +268,24 @@ void NLCharacterization_Tests::fastLoop()
         {
             m_ramp = 0;
         }
-
-        char dataString[512];
-        for (int i = 0; i < sizeof(m_cansparkLogData) / sizeof(*m_cansparkLogData); i++)
-        {
-            sprintf(dataString, "%s, %.15lf, %.15lf, %.15lf", dataString, m_cansparkLogData[i].m_pCanSparkMax->GetBusVoltage(), m_cansparkLogData[i].m_pCanSparkMax->GetAppliedOutput(), m_cansparkLogData[i].m_pCanSparkMax->GetOutputCurrent());
-        }
-        for (int i = 0; i < sizeof(m_encoderLogData) / sizeof(*m_encoderLogData); i++)
-        {
-            sprintf(dataString, "%s, %.15lf, %.15lf", dataString, m_encoderLogData[i].m_pEncoder->Get(), m_encoderLogData[i].m_pEncoder->GetRaw());
-        }
-
-        sprintf(dataString, "%s, %.15lf, %.15lf", dataString, TestData[m_CurrentTestID].m_voltage, TestData[m_CurrentTestID].m_ramp);
-        fprintf(m_LogFile, "% \n", dataString);
-
+        m_LogFile->Log(m_externalEncoderRight->Get(),
+                       m_externalEncoderLeft->Get(),
+                       m_externalEncoderRight->GetRaw(),
+                       m_externalEncoderLeft->GetRaw(),
+                       TestData[m_CurrentTestID].m_voltage,
+                       m_rightMotor->GetBusVoltage(),
+                       m_rightMotorFollower->GetBusVoltage(),
+                       m_leftMotor->GetBusVoltage(),
+                       m_leftMotorFollower->GetBusVoltage(),
+                       m_rightMotor->GetAppliedOutput(),
+                       m_rightMotorFollower->GetAppliedOutput(),
+                       m_leftMotor->GetAppliedOutput(),
+                       m_leftMotorFollower->GetAppliedOutput(),
+                       m_rightMotor->GetOutputCurrent(),
+                       m_rightMotorFollower->GetOutputCurrent(),
+                       m_leftMotor->GetOutputCurrent(),
+                       m_leftMotorFollower->GetOutputCurrent(),
+                       TestData[m_CurrentTestID].m_ramp);
         break;
 
     case State::AskForStop:
@@ -283,7 +293,7 @@ void NLCharacterization_Tests::fastLoop()
         m_leftMotorFollower->StopMotor();
         m_rightMotor->StopMotor();
         m_rightMotorFollower->StopMotor();
-        fclose(m_LogFile);
+        delete m_LogFile;
         m_LogFile = nullptr;
         m_state = State::Stopped;
         break;
