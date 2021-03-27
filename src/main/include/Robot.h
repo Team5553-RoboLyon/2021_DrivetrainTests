@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <stdio.h>
 #include <Constants.h>
 #include <frc/TimedRobot.h>
 #if XBOX_CONTROLLER
@@ -20,8 +21,6 @@
 #include <frc/PWMSparkMax.h>
 #include <frc/VictorSP.h>
 #include <networktables/NetworkTableEntry.h>
-#include "lib/CSVLogFile.h"
-#include "lib/newCSVLogFile.h"
 #include "lib/CustomMaths.h"
 #include "lib/NL/NLPid.h"
 #include "lib/NL/Characterization/NLMotorCharacterization.h"
@@ -32,8 +31,6 @@
 #endif
 #include <frc/LinearFilter.h>
 #include <frc/PowerDistributionPanel.h>
-
-#include "lib/newCSVLogFile.h"
 
 #include "lib/NL/NLTrajectoryStateSPack.h"
 
@@ -101,7 +98,6 @@ private:
   VA m_va_max;
   KineticToVoltage m_kv;
 
-  CSVLogFile *m_LogFile, *m_LogFileDriving;
   nt::NetworkTableEntry m_LogFileName, m_PowerEntry, m_logGyro, m_LogFilenameDriving, m_speedY, m_speedX, m_customEntry;
   rev::CANSparkMax m_moteurDroite{1, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_moteurDroiteFollower{4, rev::CANSparkMax::MotorType::kBrushless};

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<analyzerinfo checksum="1782272150">
+  <FileInfo check="CheckUnusedFunctions">
+    <functioncall functionName="NClearArray"/>
+    <functioncall functionName="NERROR_ARRAY_INDEX_BEYOND_LIMITS"/>
+    <functioncall functionName="NErrorIf"/>
+    <functioncall functionName="NGetArrayIndexPtr"/>
+    <functioncall functionName="NLCHARACTERIZATION_TABLE"/>
+    <functioncall functionName="NLCHARACTERIZATION_TABLE_ROW"/>
+    <functioncall functionName="NSetupArray"/>
+    <functioncall functionName="NULL"/>
+    <functioncall functionName="Size"/>
+    <functioncall functionName="angular_velocity_scaled_coef"/>
+    <functioncall functionName="capacity"/>
+    <functioncall functionName="for"/>
+    <functioncall functionName="if"/>
+    <functioncall functionName="m_angularVelocityScaleFactor"/>
+    <functioncall functionName="m_characterization"/>
+    <functioncall functionName="m_motorName"/>
+    <functioncall functionName="m_table"/>
+    <functioncall functionName="pFirst"/>
+    <functioncall functionName="pmotorname"/>
+    <functioncall functionName="setFrom"/>
+    <functioncall functionName="sizeof"/>
+    <functioncall functionName="strcmp"/>
+    <functioncall functionName="table_index"/>
+  </FileInfo>
+</analyzerinfo>

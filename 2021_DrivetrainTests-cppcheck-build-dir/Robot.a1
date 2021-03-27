@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<analyzerinfo checksum="3718019515">
+  <FileInfo check="CheckUnusedFunctions">
+    <functiondecl functionName="Deadband" lineNumber="21"/>
+    <functiondecl functionName="main" lineNumber="240"/>
+    <functiondecl functionName="Deadband" lineNumber="21"/>
+    <functiondecl functionName="main" lineNumber="240"/>
+    <functiondecl functionName="Deadband" lineNumber="21"/>
+    <functiondecl functionName="main" lineNumber="240"/>
+    <functioncall functionName="Add"/>
+    <functioncall functionName="AddPeriodic"/>
+    <functioncall functionName="Calculate"/>
+    <functioncall functionName="Deadband"/>
+    <functioncall functionName="DisableVoltageCompensation"/>
+    <functioncall functionName="Drive"/>
+    <functioncall functionName="EnableVoltageCompensation"/>
+    <functioncall functionName="GetAButtonPressed"/>
+    <functioncall functionName="GetAccelInstantX"/>
+    <functioncall functionName="GetAccelInstantY"/>
+    <functioncall functionName="GetBButtonPressed"/>
+    <functioncall functionName="GetEntry"/>
+    <functioncall functionName="GetTab"/>
+    <functioncall functionName="GetX"/>
+    <functioncall functionName="GetXButtonPressed"/>
+    <functioncall functionName="GetY"/>
+    <functioncall functionName="NABS"/>
+    <functioncall functionName="NMAX"/>
+    <functioncall functionName="Reset"/>
+    <functioncall functionName="RestoreFactoryDefaults"/>
+    <functioncall functionName="Set"/>
+    <functioncall functionName="SetDistancePerPulse"/>
+    <functioncall functionName="SetDouble"/>
+    <functioncall functionName="SetIdleMode"/>
+    <functioncall functionName="SetInverted"/>
+    <functioncall functionName="SetOpenLoopRampRate"/>
+    <functioncall functionName="SetPeriodicFramePeriod"/>
+    <functioncall functionName="SetReverseDirection"/>
+    <functioncall functionName="SetSamplesToAverage"/>
+    <functioncall functionName="SetString"/>
+    <functioncall functionName="StartRobot"/>
+    <functioncall functionName="VMAX"/>
+    <functioncall functionName="VOLTAGE_COMPENSATION_VALUE"/>
+    <functioncall functionName="WithWidget"/>
+    <functioncall functionName="abs"/>
+    <functioncall functionName="deadband"/>
+    <functioncall functionName="desc"/>
+    <functioncall functionName="false"/>
+    <functioncall functionName="fastLoop"/>
+    <functioncall functionName="forward"/>
+    <functioncall functionName="getCurrentTestDescription"/>
+    <functioncall functionName="getState"/>
+    <functioncall functionName="if"/>
+    <functioncall functionName="infos"/>
+    <functioncall functionName="init_x"/>
+    <functioncall functionName="init_y"/>
+    <functioncall functionName="kBrake"/>
+    <functioncall functionName="kLeftHand"/>
+    <functioncall functionName="kRightHand"/>
+    <functioncall functionName="kStatus0"/>
+    <functioncall functionName="kStatus1"/>
+    <functioncall functionName="kStatus2"/>
+    <functioncall functionName="kTextView"/>
+    <functioncall functionName="lwheel"/>
+    <functioncall functionName="nextTest"/>
+    <functioncall functionName="null"/>
+    <functioncall functionName="previousTest"/>
+    <functioncall functionName="reset"/>
+    <functioncall functionName="rwheel"/>
+    <functioncall functionName="sprintf"/>
+    <functioncall functionName="start"/>
+    <functioncall functionName="stop"/>
+    <functioncall functionName="true"/>
+    <functioncall functionName="turn"/>
+    <functioncall functionName="value"/>
+  </FileInfo>
+</analyzerinfo>

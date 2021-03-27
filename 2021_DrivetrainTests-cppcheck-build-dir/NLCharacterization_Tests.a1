@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<analyzerinfo checksum="2384842507">
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;headingString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;headingString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="11944877584251876802">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="226" column="90"/>
+            <symbol>headingString</symbol>
+        </error>
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;headingString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;headingString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="6552058026026194352">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="230" column="59"/>
+            <symbol>headingString</symbol>
+        </error>
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;headingString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;headingString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="14720600155471952283">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="232" column="53"/>
+            <symbol>headingString</symbol>
+        </error>
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;dataString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;dataString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="15209024231109920389">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="269" column="63"/>
+            <symbol>dataString</symbol>
+        </error>
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;dataString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;dataString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="314699645150277013">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="273" column="55"/>
+            <symbol>dataString</symbol>
+        </error>
+        <error id="sprintfOverlappingData" severity="error" msg="Undefined behavior: Variable &apos;dataString&apos; is used as parameter and destination in sprintf()." verbose="The variable &apos;dataString&apos; is used both as a parameter and as destination in sprintf(). The origin and destination buffers overlap. Quote from glibc (C-library) documentation (http://www.gnu.org/software/libc/manual/html_mono/libc.html#Formatted-Output-Functions): &quot;If copying takes place between objects that overlap as a result of a call to sprintf() or snprintf(), the results are undefined.&quot;" cwe="628" hash="11706401784541045502">
+            <location file="/home/eymeric/code_bidouille/projets/robolyon/2021_DrivetrainTests/src/main/cpp/lib/NL/Characterization/NLCharacterization_Tests.cpp" line="276" column="51"/>
+            <symbol>dataString</symbol>
+        </error>
+  <FileInfo check="CheckUnusedFunctions">
+    <functioncall functionName="AskForStart"/>
+    <functioncall functionName="AskForStop"/>
+    <functioncall functionName="BITGET"/>
+    <functioncall functionName="BITSET"/>
+    <functioncall functionName="Get"/>
+    <functioncall functionName="GetAppliedOutput"/>
+    <functioncall functionName="GetBusVoltage"/>
+    <functioncall functionName="GetInverted"/>
+    <functioncall functionName="GetOpenLoopRampRate"/>
+    <functioncall functionName="GetOutputCurrent"/>
+    <functioncall functionName="GetRaw"/>
+    <functioncall functionName="NMIN"/>
+    <functioncall functionName="Reset"/>
+    <functioncall functionName="Set"/>
+    <functioncall functionName="SetOpenLoopRampRate"/>
+    <functioncall functionName="Started"/>
+    <functioncall functionName="StopMotor"/>
+    <functioncall functionName="Stopped"/>
+    <functioncall functionName="TestData"/>
+    <functioncall functionName="TestSpecs"/>
+    <functioncall functionName="assert"/>
+    <functioncall functionName="break"/>
+    <functioncall functionName="dataString"/>
+    <functioncall functionName="default"/>
+    <functioncall functionName="desc"/>
+    <functioncall functionName="double"/>
+    <functioncall functionName="endVoltageLow"/>
+    <functioncall functionName="endVoltageMedium"/>
+    <functioncall functionName="externalEncoderLeft"/>
+    <functioncall functionName="externalEncoderRight"/>
+    <functioncall functionName="fclose"/>
+    <functioncall functionName="fopen"/>
+    <functioncall functionName="for"/>
+    <functioncall functionName="fprintf"/>
+    <functioncall functionName="free"/>
+    <functioncall functionName="headingString"/>
+    <functioncall functionName="i"/>
+    <functioncall functionName="if"/>
+    <functioncall functionName="int"/>
+    <functioncall functionName="invertedPrefix"/>
+    <functioncall functionName="leftMotor"/>
+    <functioncall functionName="leftMotorFollower"/>
+    <functioncall functionName="m_CurrentTestID"/>
+    <functioncall functionName="m_LogFile"/>
+    <functioncall functionName="m_cansparkLogData"/>
+    <functioncall functionName="m_encoderLogData"/>
+    <functioncall functionName="m_externalEncoderLeft"/>
+    <functioncall functionName="m_externalEncoderRight"/>
+    <functioncall functionName="m_flags"/>
+    <functioncall functionName="m_leftMotor"/>
+    <functioncall functionName="m_leftMotorFollower"/>
+    <functioncall functionName="m_nbTotalTest"/>
+    <functioncall functionName="m_oldRamp"/>
+    <functioncall functionName="m_ramp"/>
+    <functioncall functionName="m_rightMotor"/>
+    <functioncall functionName="m_rightMotorFollower"/>
+    <functioncall functionName="m_state"/>
+    <functioncall functionName="m_voltage"/>
+    <functioncall functionName="malloc"/>
+    <functioncall functionName="nbTestHigh"/>
+    <functioncall functionName="nbTestLow"/>
+    <functioncall functionName="nbTestMedium"/>
+    <functioncall functionName="nullptr"/>
+    <functioncall functionName="pmessage"/>
+    <functioncall functionName="prefix"/>
+    <functioncall functionName="rampValue"/>
+    <functioncall functionName="return"/>
+    <functioncall functionName="rightMotor"/>
+    <functioncall functionName="rightMotorFollower"/>
+    <functioncall functionName="size_terminated_null_char_included"/>
+    <functioncall functionName="sizeof"/>
+    <functioncall functionName="sizetocopy"/>
+    <functioncall functionName="sprintf"/>
+    <functioncall functionName="strncpy"/>
+    <functioncall functionName="switch"/>
+    <functioncall functionName="testId"/>
+    <functioncall functionName="time"/>
+  </FileInfo>
+</analyzerinfo>
