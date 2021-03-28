@@ -302,7 +302,7 @@ void Robot::RobotInit()
     m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #endif
-    //frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
+    frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
 
@@ -474,7 +474,7 @@ void Robot::RobotInit()
                 //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
                 m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
                 //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
-                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a, m_currrentSState.m_kin.m_a, m_leftErrorVoltage, m_rightErrorVoltage);
+                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a, m_currrentSState.m_kin.m_a, m_leftErrorVoltage, m_rightErrorVoltage, m_gyro.GetAngle());
             }
             else
             {
@@ -490,7 +490,7 @@ void Robot::RobotInit()
                 //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
                 m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
                 //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
-                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * left, m_currrentSState.m_kin.m_a * right, m_leftErrorVoltage, m_rightErrorVoltage);
+                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * left, m_currrentSState.m_kin.m_a * right, m_leftErrorVoltage, m_rightErrorVoltage, m_gyro.GetAngle());
             }
         }
         else
@@ -625,7 +625,6 @@ void Robot::TeleopInit()
 
 void Robot::TeleopPeriodic()
 {
-    std::cout << "on : " << m_isLogging << std::endl;
     //std::cout << m_imu.GetAngle() << std::endl;
     //DriveOld(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #if IMU
@@ -748,7 +747,7 @@ void Robot::TeleopPeriodic()
             //m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "encoderGetD", "encoderGetG", "encoderGetRawD", "encoderGetRawG", "Theorical Voltage", "BusVoltageD1", "BusVoltageD2", "BusVoltageG1", "BusVoltageG2", "AppliedOutputD1", "AppliedOutputD2", "AppliedOutputG1", "AppliedOutputG2", "currentD1", "currentD2", "currentG1", "currentG2", "rampActive");
             char logName[128];
             sprintf(logName, "/home/lvuser/logs/%s", PATHNAME);
-            m_LogFileDriving = new CSVLogFile(logName, "encodeurG", "encodeurD", "speed", "SpeedG", "SpeedR", "AccelG", "AccelR", "ErrorG", "ErrorR");
+            m_LogFileDriving = new CSVLogFile(logName, "encodeurG", "encodeurD", "speed", "SpeedG", "SpeedR", "AccelG", "AccelR", "ErrorG", "ErrorR", "GyroAngle");
             m_LogFilenameDriving.SetString(m_LogFileDriving->GetFileName());
 
             m_encodeurExterneDroite.Reset();
