@@ -24,7 +24,7 @@
 #define AMAX 7   // Acceleration Max  au PIF .. à définir aux encodeurs
 #define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
 #define JMAX 45
-#define WMAX ((2.0 * VMAX) / TRACKWIDTH) // vitesse angulaire Max theorique
+#define WMAX ((2.0 * VMAX) / TRACKWIDTH) * 0.6 // vitesse angulaire Max theorique
 #define PATHNAME "0_8Great2UJ30A1_5V1"
 
 // Flags Manipulation
@@ -197,7 +197,7 @@ void Robot::DriveOld(double forward, double turn)
 void Robot::Drive(double forward, double turn)
 {
     forward = Deadband(forward, 0.1);
-    turn = Deadband(turn, 0.1);
+    turn = Deadband(turn, 0.2);
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
 
@@ -226,6 +226,7 @@ void Robot::Drive(double forward, double turn)
 
     std::cout << forward << "          " << target_left_speed << "          " << m_va_left.m_speed << "   :   " << m_va_left.m_acceleration << "             " << m_kv.getVoltage(0, &m_va_left) << "      :     " << std::endl;
 }
+
 void Robot::DriveA(double forward, double turn)
 {
     forward = Deadband(forward, 0.1);
@@ -248,8 +249,8 @@ void Robot::DriveA(double forward, double turn)
 }
 void Robot::DriveB()
 {
-    updateVelocityAndAcceleration(&m_va_left, &m_va_max, m_targetLeftSpeed, 0.005);
-    updateVelocityAndAcceleration(&m_va_right, &m_va_max, m_targetRightSpeed, 0.005);
+    updateVelocityAndAcceleration(&m_va_left, &m_va_max, m_targetLeftSpeed, 0.02);
+    updateVelocityAndAcceleration(&m_va_right, &m_va_max, m_targetRightSpeed, 0.02);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
@@ -385,203 +386,6 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus2, 50);
-
-    Robot::AddPeriodic([&]() {
-        if (m_isPathFollowing)
-        {
-            // *****************************************************    'THE' METHOD(e)
-            // feed back:
-            // avec les encodeurs on estime la position du robot:
-            //			l = distance parcourue par la roue gauche depuis le dernier reset encodeur.
-            //			r = distance parcourue par la roue droite depuis le dernier reset encodeur.
-            Nf32 l = (m_encodeurExterneGauche.GetDistance() * NF32_2PI * WHEEL_RADIUS) / 2048.0f;
-            Nf32 r = (m_encodeurExterneDroite.GetDistance() * NF32_2PI * WHEEL_RADIUS) / 2048.0f;
-
-            //			dl et dr = distances parcourues par les roues gauche et droite depuis le dernier call.
-            //			(note dl/dt = vitesse roue gauche et dr/dt = vitesse roue droite droite )
-            Nf32 dl = l - m_dsLeftWheel;
-            Nf32 dr = r - m_dsRightWheel;
-
-            // mise à jour des distances totales parcourues par chaque roue.
-            m_dsLeftWheel = l;
-            m_dsRightWheel = r;
-
-            // mise à jour de la position et de l'angle "estimés" du robot.
-            Nf32 v = NLODOMETRY_DRIVETRAIN_V_FROM_WHEELS(dl, dr);
-            Nf32 w = NLODOMETRY_DRIVETRAIN_W_FROM_WHEELS(dl, dr, TRACKWIDTH);
-
-            // méthode simplifiée pour de petites valeurs de w où on considère que le déplacement du robot est un petit segment de droite
-            m_estimatedAngle += w;
-            //m_estimatedPosition.x += cos(m_estimatedAngle)*v;
-            //m_estimatedPosition.y += sin(m_estimatedAngle)*v;
-            //m_estimatedPosition.z = 0.0f;
-
-            /*
-            // méthode "complète" considérant que le déplacement du robot est un arc ( et non pas un segment de droite comme pour la méthode simplifiée )
-            if (w == 0.0f) // mettre peut-être ici une tolérance if (NABS(w)< 0.000001f)
-            {
-                m_estimatedPosition.x	+= cos(m_estimatedAngle)*v;
-                m_estimatedPosition.y	+= sin(m_estimatedAngle)*v;
-                m_estimatedPosition.z	 = 0.0f;
-                m_estimatedArcCenterPos  = m_estimatedPosition;
-            }
-            else
-            {
-                rcenter = v / w;
-                m_estimatedArcCenterPos.x = m_estimatedPosition.x - rcenter * sin(m_estimatedAngle);//  ==m_position.x - rcenter *cos(m_angle - NF32_PI_2);
-                m_estimatedArcCenterPos.y = m_estimatedPosition.y + rcenter * cos(m_estimatedAngle);//  ==m_position.y - rcenter *sin(m_angle - NF32_PI_2);
-                m_estimatedArcCenterPos.z = 0.0f;
-
-                m_estimatedAngle += w;
-                m_estimatedPosition.x = m_estimatedArcCenterPos.x + rcenter * cos(m_estimatedAngle - NF32_PI_2);
-                m_estimatedPosition.y = m_estimatedArcCenterPos.y + rcenter * sin(m_estimatedAngle - NF32_PI_2);
-                m_estimatedPosition.z = 0.0f;
-            }
-            */
-            // feed forward : S(imple)State
-            m_currrentSState.m_kin.m_t += 0.005f;
-            m_trajectoryStatesPack.getState(&m_currrentSState, m_currrentSState.m_kin.m_t);
-
-            Nf32 ds = m_currrentSState.m_kin.m_s - m_prevS;
-            Nf32 k = (m_currrentSState.m_localCurvature + m_prevK) / 2.0f;
-            if (k != 0.0f)
-            {
-                Nf32 radius = 1.0f / k;
-                m_refLeftS += ds * (radius - HALF_TRACKWIDTH) / radius;
-                m_refRightS += ds * (radius + HALF_TRACKWIDTH) / radius;
-            }
-            else
-            {
-                m_refLeftS += ds;
-                m_refRightS += ds;
-            }
-            m_prevK = m_currrentSState.m_localCurvature;
-            m_prevS = m_currrentSState.m_kin.m_s;
-
-            m_errorLeft.update(m_refLeftS - m_dsLeftWheel);
-            m_errorRight.update(m_refRightS - m_dsRightWheel);
-
-            m_leftErrorVoltage = m_pid.command(&m_errorLeft);
-            m_rightErrorVoltage = m_pid.command(&m_errorRight);
-
-            // 2) avec k on a R = 1/k et avec R on a la distribution gauche droite
-            if (m_currrentSState.m_localCurvature == 0.0f)
-            {
-                //std::cout << " PID: " << m_pid.m_kP << " " << m_pid.m_kI << " " << m_pid.m_kD << std::endl;
-                //std::cout << " MG: " << m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage << std::endl;
-                //std::cout << " MD: " << m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage << std::endl;
-                m_moteurGauche.SetVoltage(units::volt_t(m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
-                //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_leftErrorVoltage));
-                m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
-                //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a) + m_rightErrorVoltage));
-                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_a, m_currrentSState.m_kin.m_a, m_leftErrorVoltage, m_rightErrorVoltage, m_gyro.GetAngle());
-            }
-            else
-            {
-
-                r = 1.0f / m_currrentSState.m_localCurvature;
-                Nf32 left = (r - HALF_TRACKWIDTH) * m_currrentSState.m_localCurvature;
-                Nf32 right = (r + HALF_TRACKWIDTH) * m_currrentSState.m_localCurvature;
-                //std::cout << " MG: " << m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage << std::endl;
-                //std::cout << " MD: " << m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage << std::endl;
-                //std::cout << " PID: " << m_pid.m_kP << " " << m_pid.m_kI << " " << m_pid.m_kD << std::endl;
-
-                m_moteurGauche.SetVoltage(units::volt_t(m_motorCharacterization[2].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
-                //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_motorCharacterization[3].getVoltage(m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_a * left) + m_leftErrorVoltage));
-                m_moteurDroite.SetVoltage(units::volt_t(m_motorCharacterization[0].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
-                //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_motorCharacterization[1].getVoltage(m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * right) + m_rightErrorVoltage));
-                m_LogFileDriving->Log(m_encodeurExterneGauche.GetDistance(), m_encodeurExterneDroite.GetDistance(), m_currrentSState.m_kin.m_v, m_currrentSState.m_kin.m_v * left, m_currrentSState.m_kin.m_v * right, m_currrentSState.m_kin.m_a * left, m_currrentSState.m_kin.m_a * right, m_leftErrorVoltage, m_rightErrorVoltage, m_gyro.GetAngle());
-            }
-        }
-        else
-        {
-            DriveB();
-        }
-        if (m_isLogging)
-        {
-            /*m_LogFileDriving->Log(m_targetLeftSpeed,
-                                  m_va_left.m_speed,
-                                  m_encodeurExterneGauche.GetDistance(),
-                                  m_va_left.m_acceleration,
-                                  m_kv.getVoltage(2, &m_va_left),
-                                  m_moteurGauche.GetBusVoltage() * m_moteurGauche.GetAppliedOutput(),
-                                  m_moteurGaucheFollower.GetBusVoltage() * m_moteurGaucheFollower.GetAppliedOutput(),
-                                  m_moteurDroite.GetBusVoltage() * m_moteurDroite.GetAppliedOutput(),
-                                  m_moteurDroiteFollower.GetBusVoltage() * m_moteurDroiteFollower.GetAppliedOutput(),
-                                  m_pdp.GetCurrent(0),
-                                  m_pdp.GetCurrent(1),
-                                  m_pdp.GetCurrent(14),
-                                  m_pdp.GetCurrent(15),
-                                  m_moteurDroite.GetOutputCurrent(),
-                                  m_moteurDroiteFollower.GetOutputCurrent(),
-                                  m_moteurGauche.GetOutputCurrent(),
-                                  m_moteurGaucheFollower.GetOutputCurrent(),
-                                  m_moteurDroite.GetFaults(),
-                                  m_moteurDroiteFollower.GetFaults(),
-                                  m_moteurGauche.GetFaults(),
-                                  m_moteurGaucheFollower.GetFaults());*/
-        }
-    },
-                       5_ms, 2_ms);
-
-    // TRAJECTORY
-    wpi::SmallString<64> deployDirectory;
-    frc::filesystem::GetDeployDirectory(deployDirectory);
-    //wpi::sys::path::append(deployDirectory, "ligne_1_505mJ45A2V1.tsp");
-    //wpi::sys::path::append(deployDirectory, "U_2mx1mJ45A2V1.tsp");
-    //wpi::sys::path::append(deployDirectory, "V_J30A2V1.tsp");
-    // wpi::sys::path::append(deployDirectory, "S_[3_348mlong]J45A2V1.tsp");
-    char name[64];
-    sprintf(name, "%s.tsp", PATHNAME);
-    wpi::sys::path::append(deployDirectory, name);
-    std::cout << deployDirectory << std::endl;
-
-    std::cout << "file open to read" << std::endl;
-    FILE *pfile = fopen(deployDirectory.c_str(), "rb");
-    m_trajectoryStatesPack.read(pfile);
-    fclose(pfile);
-    std::cout << "file close" << std::endl;
-
-    m_pid.m_kP = 40.0f;
-    m_pid.m_kI = 0.0f;
-    m_pid.m_kD = 0.0f;
-    /*
-if(m_trajectoryStatesPack.m_trajectoryStateSArray.Size)
-{
-frc::filesystem::GetDeployDirectory(deployDirectory);
- wpi::sys::path::append(deployDirectory, "rewritted.tsp");
-    std::cout << "file open to write" << std::endl;
-    pfile = fopen(deployDirectory.c_str(), "wb");
-    m_trajectoryStatesPack.write(pfile);
-    fclose(pfile);
-
-    std::cout << "file close" << std::endl;
-}
-else
-{
-    std::cout << "m_trajectoryStatesPack is empty ?!?" << std::endl;
-}
- */
-
-    /*m_motorCharacterization[0].setForwardConst(3.1326206010537563, 0.5677475451077377, 0.13130778674420807);
-    m_motorCharacterization[1].setForwardConst(3.1235193481564174, 0.5556044575328529, 0.14299467623195827);
-    m_motorCharacterization[2].setForwardConst(3.098541009252153, 0.3552462306731122, 0.1591323786822345);
-    m_motorCharacterization[3].setForwardConst(3.097982066096822, 0.3571148418248107, 0.16019545143144676);
-
-    m_motorCharacterization[0].setBackwardConst(3.161121333666647, 0.5486387690059814, -0.13693734149024817);
-    m_motorCharacterization[1].setBackwardConst(3.151959813222301, 0.5385715415354247, -0.14931540125265652);
-    m_motorCharacterization[2].setBackwardConst(3.0649666485836486, 0.4261078385729976, -0.15383003389418626);
-    m_motorCharacterization[3].setBackwardConst(3.064038233186117, 0.4359525131849489, -0.15504809860349766);*/
-
-    m_motorCharacterization[2].setBackwardConst(2.9173147307197733, 0.522716984981712, -0.14941576500105835);
-    m_motorCharacterization[3].setBackwardConst(2.9198355067184707, 0.5222812439428668, -0.14961511479256862);
-    m_motorCharacterization[0].setBackwardConst(2.99608505650355, 0.5196244708988396, -0.1643722172976183);
-    m_motorCharacterization[1].setBackwardConst(2.9960377905386903, 0.5336450448724275, -0.1640406680476354);
-
-    m_motorCharacterization[2].setForwardConst(2.913921067637356, 0.5330842773642531, 0.17048001042741223);
-    m_motorCharacterization[3].setForwardConst(2.9199808165196677, 0.5322737374019705, 0.16821280977894304);
-    m_motorCharacterization[0].setForwardConst(2.9746284237846483, 0.5426701407165282, 0.15729272509030423);
-    m_motorCharacterization[1].setForwardConst(2.9761769661388064, 0.5386750620636838, 0.15697255085663597);
 }
 
 void Robot::AutonomousInit() {}
@@ -633,10 +437,10 @@ void Robot::TeleopPeriodic()
 #endif
 
 #if XBOX_CONTROLLER
-    DriveA(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
+    Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
     m_va_max.m_acceleration = m_PowerEntry.GetDouble(0.0f);
-    DriveA(-m_leftHandController.GetY(), m_rightHandController.GetZ());
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
     std::cout << m_encodeurExterneGauche.GetDistance() << std::endl;
 #endif
 
