@@ -304,6 +304,8 @@ void Robot::RobotInit()
     m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #endif
     frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
+    m_gyro.Calibrate();
+    m_gyro.Reset();
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
 
