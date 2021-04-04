@@ -9,7 +9,8 @@
 #define VMAX 3.4 // vitesse Max  théorique (3,395472 sur JVN-DT) .. à vérifier aux encodeurs
 #define WMAX                       \
     (((2.0 * VMAX) / TRACKWIDTH) / \
-     1.7) // vitesse angulaire Max theorique	.. à modifier avec Garice
+     1.7) *                        \
+        0.6 // vitesse angulaire Max theorique	.. à modifier avec Garice
 
 // Flags Manipulation
 #define FLAG_TOGGLE(val, flag) ((val) ^= (flag))

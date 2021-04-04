@@ -197,7 +197,7 @@ void Robot::DriveOld(double forward, double turn)
 void Robot::Drive(double forward, double turn)
 {
     forward = Deadband(forward, 0.1);
-    turn = Deadband(turn, 0.2);
+    turn = Deadband(turn, 0.1);
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
 
@@ -230,7 +230,7 @@ void Robot::Drive(double forward, double turn)
 void Robot::DriveA(double forward, double turn)
 {
     forward = Deadband(forward, 0.1);
-    turn = Deadband(turn, 0.15);
+    turn = Deadband(turn, 0.1);
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
 
@@ -296,7 +296,7 @@ void Robot::RobotInit()
     m_moteurDroiteFollower.SetClosedLoopRampRate(0.5);
     */
 
-    m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 7.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
     m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #if IMU
