@@ -197,7 +197,7 @@ void Robot::DriveOld(double forward, double turn)
 void Robot::Drive(double forward, double turn)
 {
     forward = Deadband(forward, 0.1);
-    turn = Deadband(turn, 0.1);
+    turn = Deadband(turn, 0.2);
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
 
@@ -388,6 +388,15 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus0, 5);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus2, 50);
+}
+
+void Robot::RobotPeriodic()
+{
+#if XBOX_CONTROLLER
+#else
+    // Arret d'urgence
+    assert(!m_leftHandController.GetRawButton(1) && !m_rightHandController.GetRawButton(1));
+#endif
 }
 
 void Robot::AutonomousInit() {}
