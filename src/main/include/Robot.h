@@ -31,6 +31,7 @@
 #include <frc/LinearFilter.h>
 #include <frc/PowerDistributionPanel.h>
 #include <frc/ADXRS450_Gyro.h>
+#include <sys/stat.h>
 
 #include "lib/NL/NLTrajectoryStateSPack.h"
 
@@ -143,6 +144,8 @@ private:
 
   void LogData();
   double m_turnAdjustFactor = 1;
+
+  char eStoppedFilePath[64] = "/tmp/estopped.txt";
 
 #if XBOX_CONTROLLER
   frc::XboxController m_driverController{0};

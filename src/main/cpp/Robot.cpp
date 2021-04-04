@@ -392,10 +392,27 @@ void Robot::RobotInit()
 
 void Robot::RobotPeriodic()
 {
+    if (m_leftHandController.GetRawButton(11) && m_rightHandController.GetRawButton(11) && m_leftHandController.GetRawButton(12) && m_rightHandController.GetRawButton(12))
+    {
+        std::cout << "ARRET D'URGENCE DÉSACTIVÉ ! BE CAREFUL ! " << std::endl;
+        remove(eStoppedFilePath);
+    }
+    struct stat buffer;
+    int exist = stat(eStoppedFilePath, &buffer);
+    if (exist == 0)
+    {
+        std::cout << "ARRET D'URGENCE ACTIF ! Pour sortir, appuyez sur les deux boutons 11 et 12 de chaque joystick." << std::endl;
+        abort();
+    }
 #if XBOX_CONTROLLER
 #else
-    // Arret d'urgence
-    assert(!m_leftHandController.GetRawButton(1) && !m_rightHandController.GetRawButton(1));
+    if (m_leftHandController.GetRawButton(1) && m_rightHandController.GetRawButton(1))
+    {
+        std::cout << "ARRET D'URGENCE DÉCLENCHÉ !" << std::endl;
+        FILE *eStoppedFile = fopen(eStoppedFilePath, "a");
+        fclose(eStoppedFile);
+        abort();
+    }
 #endif
 }
 
