@@ -51,6 +51,7 @@ public:
   void TestPeriodic() override;
 
   void DriveOld(double forward, double turn);
+  void SimplyDrive(double forward, double turn);
   void Drive(double jy, double jx);
   void DriveA(double forward, double turn);
   void DriveB();

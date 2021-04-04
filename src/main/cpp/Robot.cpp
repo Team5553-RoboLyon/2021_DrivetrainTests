@@ -53,7 +53,7 @@
 
 #define FLAG_TestSpecs_Done 1
 
-#define TIME_RAMP 0
+#define TIME_RAMP 0.6
 
 typedef struct TestSpecs TestSpecs;
 struct TestSpecs
@@ -136,6 +136,45 @@ double Deadband(double value, double deadband = 0.1)
         return 0;
     else
         return value < 0 ? (value + deadband) / (1.0 - deadband) : (value - deadband) / (1.0 - deadband);
+}
+
+void Robot::SimplyDrive(double forward, double turn)
+{ //std::cout<<forward<<std::endl;
+    forward = Deadband(forward, 0.2);
+    turn = Deadband(turn, 0.2);
+
+    /*
+    double c = 0.35 * (turn * 5.0 * (abs(turn) + 1) / (abs(forward) + 1));
+    if (turn < 0.0) {
+        m_drivetrain->Drive(forward * ((c + 1) / (1 - c)), forward);
+
+    } else {
+        m_drivetrain->Drive(forward, forward * ((1 - c) / (c + 1)));
+    }*/
+
+    double v = forward * VMAX;
+    double w = turn * WMAX * m_turnAdjustFactor;
+
+    // w = m_drivetrain->CalculateTurn(forward, w);
+
+    double lwheel = v + (w * HALF_TRACKWIDTH);
+    double rwheel = v - (w * HALF_TRACKWIDTH);
+
+    double k;
+    k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
+    lwheel *= k;
+    rwheel *= k;
+
+    //std::cout<<lwheel<<std::endl;
+
+    m_moteurGauche.Set(lwheel);
+    m_moteurGaucheFollower.Set(lwheel);
+    m_moteurDroite.Set(rwheel);
+    m_moteurDroiteFollower.Set(rwheel);
+    //std::cout<<m_encodeurDroite.GetVelocity()<<std::endl;
+    //std::cout<<m_encodeurGauche.GetVelocity()<<std::endl;
+
+    // m_drivetrain->Drive(forward + 0.5 * turn, forward - 0.5 * turn);
 }
 
 void Robot::DriveOld(double forward, double turn)
@@ -469,7 +508,7 @@ void Robot::TeleopPeriodic()
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
     m_va_max.m_acceleration = m_PowerEntry.GetDouble(0.0f);
-    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
+    SimplyDrive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
     std::cout << m_encodeurExterneGauche.GetDistance() << std::endl;
 #endif
 
