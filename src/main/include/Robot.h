@@ -25,6 +25,7 @@
 #include "lib/NL/NLPid.h"
 #include "lib/NL/Characterization/NLMotorCharacterization.h"
 #include "Joystick.h"
+#include <frc/smartdashboard/SendableChooser.h>
 #if IMU
 #include <adi/ADIS16470_IMU.h>
 #endif
@@ -33,11 +34,14 @@
 #include <frc/ADXRS450_Gyro.h>
 
 #include "lib/NL/NLTrajectoryStateSPack.h"
+#include <dirent.h>
+#include <vector>
 
 class Robot : public frc::TimedRobot
 {
 public:
   void RobotInit() override;
+  void RobotPeriodic() override;
 
   void AutonomousInit() override;
   void AutonomousPeriodic() override;
@@ -149,4 +153,7 @@ private:
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
 #endif
+  frc::SendableChooser<std::string> m_pathChooser;
+  std::string m_pathChoosed;
+  std::string m_oldPath;
 };

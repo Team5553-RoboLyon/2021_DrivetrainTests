@@ -386,6 +386,33 @@ void Robot::RobotInit()
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus1, 5);
     m_moteurGaucheFollower.SetPeriodicFramePeriod(rev::CANSparkMaxLowLevel::PeriodicFrame::kStatus2, 50);
 
+    /**
+     * Show dropdown for paths
+     * */
+    DIR *dir;
+    struct dirent *diread;
+    std::vector<char *> files;
+    wpi::SmallString<64> deployDirectory;
+    frc::filesystem::GetDeployDirectory(deployDirectory);
+
+    if ((dir = opendir("/home/lvuser/deploy/paths")) != nullptr)
+    {
+        while ((diread = readdir(dir)) != nullptr)
+        {
+            files.push_back(diread->d_name);
+        }
+        closedir(dir);
+    }
+    else
+    {
+        perror("opendir");
+    }
+
+    for (auto file : files)
+        m_pathChooser.AddOption(file, file);
+
+    frc::Shuffleboard::GetTab("RBL").Add("Chemin", m_pathChooser).WithWidget(frc::BuiltInWidgets::kComboBoxChooser);
+
     Robot::AddPeriodic([&]() {
         if (m_isPathFollowing)
         {
@@ -523,28 +550,6 @@ void Robot::RobotInit()
         }
     },
                        5_ms, 2_ms);
-
-    // TRAJECTORY
-    wpi::SmallString<64> deployDirectory;
-    frc::filesystem::GetDeployDirectory(deployDirectory);
-    //wpi::sys::path::append(deployDirectory, "ligne_1_505mJ45A2V1.tsp");
-    //wpi::sys::path::append(deployDirectory, "U_2mx1mJ45A2V1.tsp");
-    //wpi::sys::path::append(deployDirectory, "V_J30A2V1.tsp");
-    // wpi::sys::path::append(deployDirectory, "S_[3_348mlong]J45A2V1.tsp");
-    char name[64];
-    sprintf(name, "%s.tsp", PATHNAME);
-    wpi::sys::path::append(deployDirectory, name);
-    std::cout << deployDirectory << std::endl;
-
-    std::cout << "file open to read" << std::endl;
-    FILE *pfile = fopen(deployDirectory.c_str(), "rb");
-    m_trajectoryStatesPack.read(pfile);
-    fclose(pfile);
-    std::cout << "file close" << std::endl;
-
-    m_pid.m_kP = 40.0f;
-    m_pid.m_kI = 0.0f;
-    m_pid.m_kD = 0.0f;
     /*
 if(m_trajectoryStatesPack.m_trajectoryStateSArray.Size)
 {
@@ -582,6 +587,35 @@ else
     m_motorCharacterization[3].setForwardConst(2.9199808165196677, 0.5322737374019705, 0.16821280977894304);
     m_motorCharacterization[0].setForwardConst(2.9746284237846483, 0.5426701407165282, 0.15729272509030423);
     m_motorCharacterization[1].setForwardConst(2.9761769661388064, 0.5386750620636838, 0.15697255085663597);
+}
+
+void Robot::RobotPeriodic()
+{
+    m_pathChoosed = m_pathChooser.GetSelected();
+    if (m_pathChoosed != m_oldPath)
+    {
+        // TRAJECTORY
+        wpi::SmallString<64> deployDirectory;
+        frc::filesystem::GetDeployDirectory(deployDirectory);
+        //wpi::sys::path::append(deployDirectory, "ligne_1_505mJ45A2V1.tsp");
+        //wpi::sys::path::append(deployDirectory, "U_2mx1mJ45A2V1.tsp");
+        //wpi::sys::path::append(deployDirectory, "V_J30A2V1.tsp");
+        // wpi::sys::path::append(deployDirectory, "S_[3_348mlong]J45A2V1.tsp");
+        char name[64];
+        wpi::sys::path::append(deployDirectory, m_pathChoosed);
+        std::cout << deployDirectory << std::endl;
+
+        std::cout << "file open to read" << std::endl;
+        FILE *pfile = fopen(deployDirectory.c_str(), "rb");
+        m_trajectoryStatesPack.read(pfile);
+        fclose(pfile);
+        std::cout << "file close" << std::endl;
+
+        m_pid.m_kP = 40.0f;
+        m_pid.m_kI = 0.0f;
+        m_pid.m_kD = 0.0f;
+        m_oldPath = m_pathChoosed;
+    }
 }
 
 void Robot::AutonomousInit() {}
