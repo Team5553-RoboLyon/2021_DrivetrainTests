@@ -99,7 +99,7 @@ void initializeTestData()
         TestData[2 * (TEST_LOWVOLTAGE_NB + TEST_MEDIUMVOLTAGE_NB + i) + 1].m_flags = 0;
     }
 
-    Message = frc::Shuffleboard::GetTab("voltage").Add("Message", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    Message = frc::Shuffleboard::GetTab("RBL").Add("Message", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 }
 
 void messageTestEnAttente()
@@ -138,24 +138,10 @@ double Deadband(double value, double deadband = 0.1)
         return value < 0 ? (value + deadband) / (1.0 - deadband) : (value - deadband) / (1.0 - deadband);
 }
 
-void Robot::SimplyDrive(double forward, double turn)
-{ //std::cout<<forward<<std::endl;
-    forward = Deadband(forward, 0.2);
-    turn = Deadband(turn, 0.2);
-
-    /*
-    double c = 0.35 * (turn * 5.0 * (abs(turn) + 1) / (abs(forward) + 1));
-    if (turn < 0.0) {
-        m_drivetrain->Drive(forward * ((c + 1) / (1 - c)), forward);
-
-    } else {
-        m_drivetrain->Drive(forward, forward * ((1 - c) / (c + 1)));
-    }*/
-
+void Robot::DriveWithoutCharacterization(double forward, double turn)
+{
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
-
-    // w = m_drivetrain->CalculateTurn(forward, w);
 
     double lwheel = v + (w * HALF_TRACKWIDTH);
     double rwheel = v - (w * HALF_TRACKWIDTH);
@@ -164,83 +150,37 @@ void Robot::SimplyDrive(double forward, double turn)
     k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
     lwheel *= k;
     rwheel *= k;
-
-    //std::cout<<lwheel<<std::endl;
 
     m_moteurGauche.Set(lwheel);
     m_moteurGaucheFollower.Set(lwheel);
     m_moteurDroite.Set(rwheel);
     m_moteurDroiteFollower.Set(rwheel);
-    //std::cout<<m_encodeurDroite.GetVelocity()<<std::endl;
-    //std::cout<<m_encodeurGauche.GetVelocity()<<std::endl;
-
-    // m_drivetrain->Drive(forward + 0.5 * turn, forward - 0.5 * turn);
-}
-
-void Robot::DriveOld(double forward, double turn)
-{
-    if (!m_override)
-    {
-        //std::cout<<forward<<std::endl;
-        forward = Deadband(forward, 0.1);
-        turn = Deadband(turn, 0.2);
-
-        /*
-    double c = 0.35 * (turn * 5.0 * (abs(turn) + 1) / (abs(forward) + 1));
-    if (turn < 0.0) {
-        m_drivetrain->Drive(forward * ((c + 1) / (1 - c)), forward);
-
-    } else {
-        m_drivetrain->Drive(forward, forward * ((1 - c) / (c + 1)));
-    }*/
-
-        double v = forward * VMAX;
-        double w = turn * WMAX * m_turnAdjustFactor;
-
-        // w = m_drivetrain->CalculateTurn(forward, w);
-
-        double lwheel = v + (w * HALF_TRACKWIDTH);
-        double rwheel = v - (w * HALF_TRACKWIDTH);
-
-        double k;
-        k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
-        lwheel *= k;
-        rwheel *= k;
-
-        //std::cout<<lwheel<<std::endl;
-
-        m_moteurGauche.Set(lwheel);
-        m_moteurGaucheFollower.Set(lwheel);
-        m_moteurDroite.Set(rwheel);
-        m_moteurDroiteFollower.Set(rwheel);
-        //std::cout<<m_encodeurDroite.GetVelocity()<<std::endl;
-        //std::cout<<m_encodeurGauche.GetVelocity()<<std::endl;
-
-        // m_drivetrain->Drive(forward + 0.5 * turn, forward - 0.5 * turn);
-    }
-    else
-    {
-        // double power = m_PowerEntry.GetDouble(0.0) / 11.5;
-
-        // double power =TestData[CurrentTestID].m_voltage;
-
-        //m_moteurGauche.Set(TestData[CurrentTestID].m_voltage / VOLTAGE_COMPENSATION_VALUE);
-        //m_moteurDroite.Set(TestData[CurrentTestID].m_voltage / VOLTAGE_COMPENSATION_VALUE);
-        m_moteurGauche.Set(TestData[CurrentTestID].m_voltage / m_moteurGauche.GetBusVoltage());
-        m_moteurGaucheFollower.Set(TestData[CurrentTestID].m_voltage / m_moteurGaucheFollower.GetBusVoltage());
-        m_moteurDroite.Set(TestData[CurrentTestID].m_voltage / m_moteurDroite.GetBusVoltage());
-        m_moteurDroiteFollower.Set(TestData[CurrentTestID].m_voltage / m_moteurDroiteFollower.GetBusVoltage());
-    }
 }
 
 void Robot::Drive(double forward, double turn)
 {
-    forward = Deadband(forward, 0.1);
+    forward = Deadband(forward, 0.2);
     turn = Deadband(turn, 0.2);
+
+    m_driveModeSelected = m_driveModeChooser.GetSelected();
+    if (m_driveModeSelected == kdriveModeCharacterization)
+    {
+        DriveWithCharacterization(forward, turn);
+    }
+    else if (m_driveModeSelected == kdriveModeNoCharacterization)
+    {
+        DriveWithoutCharacterization(forward, turn);
+    }
+    else
+    {
+        return;
+    }
+}
+
+void Robot::DriveWithCharacterization(double forward, double turn)
+{
     double v = forward * VMAX;
     double w = turn * WMAX * m_turnAdjustFactor;
-
-    // w = m_drivetrain->CalculateTurn(forward, w);
 
     double lwheel = v + (w * HALF_TRACKWIDTH);
     double rwheel = v - (w * HALF_TRACKWIDTH);
@@ -249,57 +189,16 @@ void Robot::Drive(double forward, double turn)
     k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
     lwheel *= k;
     rwheel *= k;
-
     double target_left_speed = lwheel * VMAX;
     double target_right_speed = rwheel * VMAX;
-    //std::cout << target_left_speed << "     " << target_right_speed << std::endl;
-    //getSpeedsAndAccelerationsNew(&m_va_left, &m_va_right, &m_va_max, jx, jy);
 
     updateVelocityAndAcceleration(&m_va_left, &m_va_max, target_left_speed, 0.02);
     updateVelocityAndAcceleration(&m_va_right, &m_va_max, target_right_speed, 0.02);
 
     m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
-    //m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
+    m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGauche.GetBusVoltage());
     m_moteurDroite.Set(m_kv.getVoltage(2, &m_va_right) / m_moteurDroite.GetBusVoltage());
-    //m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroiteFollower.GetBusVoltage());
-
-    std::cout << forward << "          " << target_left_speed << "          " << m_va_left.m_speed << "   :   " << m_va_left.m_acceleration << "             " << m_kv.getVoltage(0, &m_va_left) << "      :     " << std::endl;
-}
-
-void Robot::DriveA(double forward, double turn)
-{
-    forward = Deadband(forward, 0.1);
-    turn = Deadband(turn, 0.1);
-    double v = forward * VMAX;
-    double w = turn * WMAX * m_turnAdjustFactor;
-
-    // w = m_drivetrain->CalculateTurn(forward, w);
-
-    double lwheel = v + (w * HALF_TRACKWIDTH);
-    double rwheel = v - (w * HALF_TRACKWIDTH);
-
-    double k;
-    k = 1.0 / (NMAX(VMAX, NMAX(NABS(lwheel), NABS(rwheel))));
-    lwheel *= k;
-    rwheel *= k;
-
-    m_targetLeftSpeed = lwheel * VMAX;
-    m_targetRightSpeed = rwheel * VMAX;
-}
-void Robot::DriveB()
-{
-    updateVelocityAndAcceleration(&m_va_left, &m_va_max, m_targetLeftSpeed, 0.02);
-    updateVelocityAndAcceleration(&m_va_right, &m_va_max, m_targetRightSpeed, 0.02);
-
-    m_moteurGauche.Set(m_kv.getVoltage(0, &m_va_left) / m_moteurGauche.GetBusVoltage());
-    m_moteurGaucheFollower.Set(m_kv.getVoltage(1, &m_va_left) / m_moteurGaucheFollower.GetBusVoltage());
-    m_moteurDroite.Set(m_kv.getVoltage(2, &m_va_right) / m_moteurDroite.GetBusVoltage());
-    m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroiteFollower.GetBusVoltage());
-
-    /*m_moteurGauche.SetVoltage(units::volt_t(m_kv.getVoltage(2, &m_va_left)));
-    //m_moteurGaucheFollower.SetVoltage(units::volt_t(m_kv.getVoltage(3, &m_va_left)));
-    m_moteurDroite.SetVoltage(units::volt_t(m_kv.getVoltage(0, &m_va_right)));
-    //m_moteurDroiteFollower.SetVoltage(units::volt_t(m_kv.getVoltage(1, &m_va_right)));*/
+    m_moteurDroiteFollower.Set(m_kv.getVoltage(3, &m_va_right) / m_moteurDroite.GetBusVoltage());
 }
 
 void Robot::RobotInit()
@@ -335,21 +234,24 @@ void Robot::RobotInit()
     m_moteurDroiteFollower.SetClosedLoopRampRate(0.5);
     */
 
-    m_PowerEntry = frc::Shuffleboard::GetTab("voltage").Add("Voltage", 7.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-    m_LogFilename = frc::Shuffleboard::GetTab("voltage").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-    m_customEntry = frc::Shuffleboard::GetTab("voltage").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_PowerEntry = frc::Shuffleboard::GetTab("RBL").Add("Accélération", 7.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_LogFilename = frc::Shuffleboard::GetTab("RBL").Add("Logfile Name", "").WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_customEntry = frc::Shuffleboard::GetTab("RBL").Add("Data", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #if IMU
-    m_speedY = frc::Shuffleboard::GetTab("voltage").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
-    m_speedX = frc::Shuffleboard::GetTab("voltage").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_speedY = frc::Shuffleboard::GetTab("RBL").Add("speedY", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
+    m_speedX = frc::Shuffleboard::GetTab("RBL").Add("speedX", 0.0).WithWidget(frc::BuiltInWidgets::kTextView).GetEntry();
 #endif
-    frc::Shuffleboard::GetTab("voltage").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
+    frc::Shuffleboard::GetTab("RBL").Add(m_gyro).WithWidget(frc::BuiltInWidgets::kGyro);
+
+    m_driveModeChooser.SetDefaultOption(kdriveModeNoCharacterization, kdriveModeNoCharacterization);
+    m_driveModeChooser.AddOption(kdriveModeCharacterization, kdriveModeCharacterization);
+    m_driveModeChooser.AddOption(kdriveModeDisabled, kdriveModeDisabled);
+    frc::Shuffleboard::GetTab("RBL").Add("Mode de conduite", m_driveModeChooser).WithWidget(frc::BuiltInWidgets::kComboBoxChooser);
+
     m_gyro.Calibrate();
     m_gyro.Reset();
     /*m_moteurGaucheShooter.SetClosedLoopRampRate(0.6);
     m_moteurDroiteShooter.SetClosedLoopRampRate(0.6);*/
-
-    m_moteurDroiteFollower.Follow(m_moteurDroite);
-    m_moteurGaucheFollower.Follow(m_moteurGauche);
     m_encodeurExterneDroite.SetReverseDirection(true);
     m_encodeurExterneGauche.SetReverseDirection(false);
 
@@ -433,18 +335,17 @@ void Robot::RobotPeriodic()
 {
 #if XBOX_CONTROLLER
 #else
-    if (m_leftHandController.GetRawButton(11) && m_rightHandController.GetRawButton(11) && m_leftHandController.GetRawButton(12) && m_rightHandController.GetRawButton(12))
-    {
-        std::cout << "ARRET D'URGENCE DÉSACTIVÉ ! BE CAREFUL ! " << std::endl;
-        remove(eStoppedFilePath);
-    }
-
     if (m_leftHandController.GetRawButton(1) && m_rightHandController.GetRawButton(1))
     {
         std::cout << "ARRET D'URGENCE DÉCLENCHÉ !" << std::endl;
         FILE *eStoppedFile = fopen(eStoppedFilePath, "a");
         fclose(eStoppedFile);
         abort();
+    }
+    if (m_leftHandController.GetRawButton(11) && m_rightHandController.GetRawButton(11) && m_leftHandController.GetRawButton(12) && m_rightHandController.GetRawButton(12))
+    {
+        std::cout << "ARRET D'URGENCE DÉSACTIVÉ ! BE CAREFUL ! " << std::endl;
+        remove(eStoppedFilePath);
     }
 #endif
     struct stat buffer;
@@ -461,14 +362,6 @@ void Robot::AutonomousPeriodic() {}
 
 void Robot::TeleopInit()
 {
-    /*     filterX.Reset();
-    filterY.Reset(); */
-
-    //m_imu.ConfigCalTime(frc::ADIS16470CalibrationTime::_4s);
-    //m_imu.Calibrate();
-    //m_LogFileDriving = new CSVLogFile("/home/lvuser/logs/freeRiding", "target", "speed", "tureSpeed", "acceleration", "voltageTheoric", " trueVoltageG1 ", "trueVoltageG2", "trueVoltageR1", "trueVoltageR2", "pdp0", "pdp1", "pdp14", "pdp15", "A1", "A2", "A3", "A4", "erreur1", "erreur2", "erreur3", "erreur4");
-    //m_isLogging = true;
-
     m_encodeurExterneDroite.Reset();
     m_encodeurExterneGauche.Reset();
 
@@ -508,8 +401,7 @@ void Robot::TeleopPeriodic()
     Drive(-m_driverController.GetY(frc::GenericHID::JoystickHand::kLeftHand), m_driverController.GetX(frc::GenericHID::JoystickHand::kRightHand));
 #else:
     m_va_max.m_acceleration = m_PowerEntry.GetDouble(0.0f);
-    SimplyDrive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
-    std::cout << m_encodeurExterneGauche.GetDistance() << std::endl;
+    Drive(-m_leftHandController.GetY(), m_rightHandController.GetZ());
 #endif
 
     /*if (m_driverController.GetAButton())

@@ -33,6 +33,8 @@
 #include <frc/ADXRS450_Gyro.h>
 #include <sys/stat.h>
 
+#include <frc/smartdashboard/SendableChooser.h>
+
 #include "lib/NL/NLTrajectoryStateSPack.h"
 
 class Robot : public frc::TimedRobot
@@ -50,11 +52,9 @@ public:
   void TestInit() override;
   void TestPeriodic() override;
 
-  void DriveOld(double forward, double turn);
-  void SimplyDrive(double forward, double turn);
+  void DriveWithoutCharacterization(double forward, double turn);
   void Drive(double jy, double jx);
-  void DriveA(double forward, double turn);
-  void DriveB();
+  void DriveWithCharacterization(double forward, double turn);
 
 private:
   NLPID m_pid;
@@ -154,4 +154,9 @@ private:
   frc::Joystick m_leftHandController{0};
   frc::Joystick m_rightHandController{1};
 #endif
+  frc::SendableChooser<std::string> m_driveModeChooser;
+  const std::string kdriveModeCharacterization = "Drive WITH Characterization";
+  const std::string kdriveModeNoCharacterization = "Drive WITHOUT Characterization";
+  const std::string kdriveModeDisabled = "No Drive";
+  std::string m_driveModeSelected;
 };
